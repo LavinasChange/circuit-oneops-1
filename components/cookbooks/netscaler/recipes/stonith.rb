@@ -41,6 +41,7 @@ cloud_services.each do |lb_service|
       availability_zones = JSON.parse(lb_service[:ciAttributes][:availability_zones])
       az = lb['ciAttributes']['availability_zone']      
       host = availability_zones[az]
+      next unless host
     else
       Chef::Log.info("no lb az - skipping stonith for #{dc_name}")
       next
