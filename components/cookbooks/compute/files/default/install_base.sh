@@ -33,6 +33,9 @@ set_env()
       elif [[ $ARG == ruby_binary_version:* ]] ; then
         echo "setting ruby_binary_version to $ARG"
         ruby_binary_version=${ARG/ruby_binary_version:/}
+      elif [[ $ARG == ruby_binary_path_ubuntu_14_04:* ]] ; then
+        echo "setting ruby_binary_path_ubuntu_14_04 to $ARG"
+        ruby_binary_path_ubuntu_14_04=${ARG/ruby_binary_path_ubuntu_14_04:/}
       fi
     done
 }
@@ -59,6 +62,13 @@ install_ruby_centos()
   else
     yum -d0 -e0 -y install ruby ruby-libs ruby-devel ruby-rdoc rubygems
   fi
+}
+
+install_ruby_ubuntu_14_04()
+{
+  wget -q -O ruby-binary.tar.gz $ruby_binary_path_ubuntu_14_04
+  tar zxf ruby-binary.tar.gz --strip-components 1 -C /usr
+  rm -f ruby-binary.tar.gz
 }
 
 install_ruby_binary_if_not_installed()
@@ -181,11 +191,16 @@ else
     echo "apt-get update returned non-zero result code. Usually means some repo is returning a 403 Forbidden. Try deleting the compute from providers console and retrying."
     exit 1
   fi
-  apt-get install -q -y build-essential make libxml2-dev libxslt-dev libz-dev ruby ruby-dev nagios3
-
-  # seperate rubygems - rackspace 14.04 needs it, aws doesn't
+  
+  apt-get install -q -y build-essential make libxml2-dev libxslt-dev libz-dev nagios3
+  
+  if [[ $(lsb_release -r -s) = *14.04* ]]; then
+    install_ruby_ubuntu_14_04
+  else
+    apt-get -q -y install ruby ruby-dev
+  fi
+  
   set +e
-  apt-get -y -q install rubygems-integration
   rm -fr /etc/apache2/conf.d/nagios3.conf
   set -e
 fi
