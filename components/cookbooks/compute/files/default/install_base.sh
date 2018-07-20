@@ -66,6 +66,10 @@ install_ruby_centos()
 
 install_ruby_ubuntu_14_04()
 {
+  if [ -z "$ruby_binary_path_ubuntu_14_04" ]; then
+    echo "ERROR: The Path for Ubuntu 14.04 Binaries is Empty."
+    exit 1
+  fi
   wget -q -O ruby-binary.tar.gz $ruby_binary_path_ubuntu_14_04
   tar zxf ruby-binary.tar.gz --strip-components 1 -C /usr
   rm -f ruby-binary.tar.gz
@@ -191,16 +195,21 @@ else
     echo "apt-get update returned non-zero result code. Usually means some repo is returning a 403 Forbidden. Try deleting the compute from providers console and retrying."
     exit 1
   fi
-  
+
   apt-get install -q -y build-essential make libxml2-dev libxslt-dev libz-dev nagios3
-  
+
   if [[ $(lsb_release -r -s) = *14.04* ]]; then
     install_ruby_ubuntu_14_04
   else
     apt-get -q -y install ruby ruby-dev
   fi
-  
+
   set +e
+
+  if [[ $(lsb_release -r -s) = *16.04* ]]; then
+    apt-get -y -q install rubygems-integration
+  fi
+
   rm -fr /etc/apache2/conf.d/nagios3.conf
   set -e
 fi
