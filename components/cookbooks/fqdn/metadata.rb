@@ -145,9 +145,19 @@ attribute 'legacy_gslb',
           :grouping => 'bom',
           :default => '',
           :format => {
-              :help => 'Legacy GSLB entry',
+              :help => 'Legacy GSLB entry (created before migration to Torbit)',
               :category => '2.GSLB Config',
               :order => 5
+          }
+
+attribute 'legacy_entries',
+          :description => "Legacy DNS entries",
+          :grouping => 'bom',
+          :data_type => "hash",
+          :format => {
+            :help => 'Legacy DNS entries (created before migration to Torbit)',
+            :category => '2.GSLB Config',
+            :order => 6
           }
 
 recipe "repair", "Repair"
