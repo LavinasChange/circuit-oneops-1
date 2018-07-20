@@ -23,16 +23,20 @@ include_recipe "apache_cassandra::config_directives"
 
 include_recipe "apache_cassandra::log4j_directives"
 
-unless File.exist?("/dev/lxd/sock")
-  include_recipe "apache_cassandra::limits"
-  include_recipe "apache_cassandra::update_system_parameters"
-end
-
 include_recipe "apache_cassandra::topology"
 
 `echo "export PATH=$PATH:#{cassandra_current}/bin" > /etc/profile.d/oneops_cassandra.sh`
 
 include_recipe "apache_cassandra::config_user_profile"
+
+# Delete the ulimit file this cookbook previously created.  Limits now set on User.  STRCASS-10450
+file '/etc/security/limits.d/cassandra.conf' do
+  action :delete
+end
+
+file '/etc/security/limits.d/90-nproc.conf' do
+  action :delete
+end
 
 include_recipe "apache_cassandra::initial_startup"
 
