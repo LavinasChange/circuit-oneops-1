@@ -283,8 +283,28 @@ if node.has_key?("gslb_domain") && !node.gslb_domain.nil? &&
 
     data_json["delegation"].each do |record|
       if record["base_domain"] == base_domain
-        delegation_entry_flag = true
-        delegation = record["delegate_to"]
+
+        if record.has_key?("excluded_domains") && record["excluded_domains"].size != 0
+          valid_domain = true
+          excluded_domains = record["excluded_domains"]
+
+          excluded_domains.each do |domain|
+            if fqdn.end_with?(domain)
+              Chef::Log.info("skipping creation of delgations as #{fqdn} is in excluded domains")
+              puts "***TAG:excluded_domain=#{fqdn}"
+              valid_domain = false
+              break
+            end
+          end
+
+          if valid_domain
+            delegation_entry_flag = true
+            delegation = record["delegate_to"]
+          end
+          break
+        else
+          exit_with_error "Excluded domain info is missing"
+        end
       end
     end
 

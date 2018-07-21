@@ -148,7 +148,23 @@ if env.has_key?("global_dns") && env["global_dns"] == "true" && depends_on_lb &&
 
     data_json["delegation"].each do |record|
       if record["base_domain"] == base_domain
-        delegation_entry_flag = true
+
+        if record.has_key?("excluded_domains") && record["excluded_domains"].size != 0
+          valid_domain = true
+          excluded_domains = record["excluded_domains"]
+
+          excluded_domains.each do |domain|
+            if fqdn.end_with?(domain)
+              valid_domain = false
+              break
+            end
+          end
+
+          if valid_domain
+            delegation_entry_flag = true
+          end
+          break
+        end
       end
     end
 
