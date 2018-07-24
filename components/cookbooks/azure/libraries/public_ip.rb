@@ -42,6 +42,7 @@ module AzureNetwork
       end_time = Time.now.to_i
       duration = end_time - start_time
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_get_pip=#{duration}" if ENV['KITCHEN_YAML'].nil?
       response unless response.nil?
     end
 
@@ -66,6 +67,7 @@ module AzureNetwork
       end_time = Time.now.to_i
       duration = end_time - start_time
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_delete_pip=#{duration}" if ENV['KITCHEN_YAML'].nil?
       result
     end
 
@@ -86,6 +88,7 @@ module AzureNetwork
       end_time = Time.now.to_i
       duration = end_time - start_time
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_create_update_pip=#{duration}" if ENV['KITCHEN_YAML'].nil?
       response
     end
 
@@ -104,6 +107,7 @@ module AzureNetwork
       end_time = Time.now.to_i
       duration = end_time - start_time
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_check_pip=#{duration}" if ENV['KITCHEN_YAML'].nil?
       response
     end
   end

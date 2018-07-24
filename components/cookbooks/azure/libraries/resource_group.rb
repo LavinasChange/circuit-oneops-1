@@ -26,7 +26,7 @@ module AzureResources
         resource_group.location = location
 
         start_time = Time.now.to_i
-        @client.resource_groups.create_or_update(rg_name,
+        rg = @client.resource_groups.create_or_update(rg_name,
                                                    resource_group)
         end_time = Time.now.to_i
       rescue MsRestAzure::AzureOperationError => e
@@ -36,24 +36,30 @@ module AzureResources
       end
 
       OOLog.info("Resource Group created in #{end_time - start_time} seconds")
+      puts "***TAG:az_create_rg=#{end_time - start_time}" if ENV['KITCHEN_YAML'].nil?
+      rg
     end
 
     # This method will retrieve the resource group from azure.
     def get(rg_name)
+      start_time = Time.now.to_i
       begin
-        @client.resource_groups.check_existence(rg_name)
+        rg = @client.resource_groups.check_existence(rg_name)
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error getting resource group: #{e.body}")
       rescue => ex
         OOLog.fatal("Error getting resource group: #{ex.message}")
       end
+      end_time = Time.now.to_i
+      puts "***TAG:az_get_rg=#{end_time - start_time}" if ENV['KITCHEN_YAML'].nil?
+      rg
     end
 
     # This method will delete the resource group
     def delete(rg_name)
       begin
         start_time = Time.now.to_i
-        @client.resource_groups.delete(rg_name)
+        response = @client.resource_groups.delete(rg_name)
         end_time = Time.now.to_i
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error deleting resource group: #{e.body}")
@@ -62,6 +68,8 @@ module AzureResources
       end
 
       OOLog.info("Resource Group deleted in #{end_time - start_time} seconds")
+      puts "***TAG:az_delete_rg=#{end_time - start_time}" if ENV['KITCHEN_YAML'].nil?
+      response
     end
 
     # this method will return the resource group and availability set names

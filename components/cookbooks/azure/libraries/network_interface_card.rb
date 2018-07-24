@@ -70,6 +70,7 @@ module AzureNetwork
       end_time = Time.now.to_i
       duration = end_time - start_time
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_get_nic=#{duration}" if ENV['KITCHEN_YAML'].nil?
       nic unless nic.nil?
     end
 
@@ -100,6 +101,7 @@ module AzureNetwork
         duration = end_time - start_time
         puts("operation took #{duration} seconds")
         OOLog.info("NIC '#{network_interface.name}' was updated in #{duration} seconds")
+        puts "***TAG:az_create_update_nic=#{duration}" if ENV['KITCHEN_YAML'].nil?
         response
       rescue => ex
         if ex.message =~ /Subnet \w.* with address prefix \w.* is already full/i
@@ -242,6 +244,7 @@ module AzureNetwork
       end_time = Time.now.to_i
       duration = end_time - start_time
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_delete_nic=#{duration}" if ENV['KITCHEN_YAML'].nil?
       result
     end
 

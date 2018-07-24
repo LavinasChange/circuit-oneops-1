@@ -21,6 +21,7 @@ module AzureCompute
       end
 
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_get_vms_in_rg=#{duration}" if ENV['KITCHEN_YAML'].nil?
       virtual_machines
     end
 
@@ -38,18 +39,24 @@ module AzureCompute
       end
 
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_get_vm=#{duration}" if ENV['KITCHEN_YAML'].nil?
       virtual_machine
     end
 
     def check_vm_exists?(resource_group_name, vm_name)
       begin
+        start_time = Time.now.to_i
         exists = @compute_service.servers.check_vm_exists(resource_group_name, vm_name)
+        end_time = Time.now.to_i
+        duration = end_time - start_time
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Azure::Virtual Machine - Exception trying to check VM: #{vm_params[:name]} existence. Exception is: #{e.body}")
       rescue => e
         OOLog.fatal("Error checking VM: #{vm_params[:name]} existence. Error Message: #{e.message}")
       end
       OOLog.debug("VM Exists?: #{exists}")
+      OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_check_vm=#{duration}" if ENV['KITCHEN_YAML'].nil?
       exists
     end
 
@@ -67,6 +74,7 @@ module AzureCompute
       end
 
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_create_update_vm=#{duration}" if ENV['KITCHEN_YAML'].nil?
       virtual_machine
     end
 
@@ -89,6 +97,7 @@ module AzureCompute
       end
 
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_delete_vm=#{duration}" if ENV['KITCHEN_YAML'].nil?
       true
     end
 
@@ -107,6 +116,7 @@ module AzureCompute
       end
 
       OOLog.info("VM started in #{duration} seconds")
+      puts "***TAG:az_start_vm=#{duration}" if ENV['KITCHEN_YAML'].nil?
       response
     end
 
@@ -125,6 +135,7 @@ module AzureCompute
       end
 
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_restart_vm=#{duration}" if ENV['KITCHEN_YAML'].nil?
       response
     end
 
@@ -143,6 +154,7 @@ module AzureCompute
       end
 
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_poweroff_vm=#{duration}" if ENV['KITCHEN_YAML'].nil?
       response
     end
 
@@ -161,6 +173,7 @@ module AzureCompute
       end
 
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_redeploy_vm=#{duration}" if ENV['KITCHEN_YAML'].nil?
       response
     end
   end

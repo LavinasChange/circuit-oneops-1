@@ -65,6 +65,7 @@ module AzureNetwork
       end_time = Time.now.to_i
       duration = end_time - start_time
       OOLog.info('Successfully created/updated network name: ' + @name + "\nOperation took #{duration} seconds")
+      puts "***TAG:az_create_update_vnet=#{duration}" if ENV['KITCHEN_YAML'].nil?
       response
     end
 
@@ -83,6 +84,7 @@ module AzureNetwork
       end_time = Time.now.to_i
       duration = end_time - start_time
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_get_vnet=#{duration}" if ENV['KITCHEN_YAML'].nil?
       response
     end
 
@@ -100,6 +102,7 @@ module AzureNetwork
       end_time = Time.now.to_i
       duration = end_time - start_time
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_list_vnet=#{duration}" if ENV['KITCHEN_YAML'].nil?
       response
     end
 
@@ -117,6 +120,7 @@ module AzureNetwork
       end_time = Time.now.to_i
       duration = end_time - start_time
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_list_all_vnet=#{duration}" if ENV['KITCHEN_YAML'].nil?
       response
     end
 
@@ -124,6 +128,7 @@ module AzureNetwork
     def exists?(resource_group_name)
       OOLog.fatal('VNET name is nil. It is required.') if @name.nil?
       OOLog.info("Checking if Virtual Network '#{@name}' Exists! ...")
+      start_time = Time.now.to_i
       begin
         result = @network_client.virtual_networks.check_virtual_network_exists(resource_group_name, @name)
       rescue MsRestAzure::AzureOperationError => e
@@ -131,6 +136,10 @@ module AzureNetwork
       rescue => ex
         OOLog.fatal("Error getting virtual network: #{@name} from resource group #{resource_group_name}.  Exception: #{ex.message}")
       end
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_check_vnet=#{duration}" if ENV['KITCHEN_YAML'].nil?
       result
     end
 

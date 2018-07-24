@@ -33,7 +33,7 @@ module AzureDns
 
     def get_existing_records_for_recordset(record_type, record_set_name)
       Chef::Log.info('AzureDns::RecordSet - Get existing records for RecordSet')
-
+      start_time = Time.now.to_i
       begin
         record_set = @dns_client.record_sets.get(@dns_resource_group, record_set_name, @zone, record_type) if exists?(record_set_name, record_type)
       rescue MsRestAzure::AzureOperationError => e
@@ -41,6 +41,9 @@ module AzureDns
       rescue => e
         OOLog.fatal("AzureDns::RecordSet - Exception is: #{e.message}")
       end
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      puts "***TAG:az_get_existing_records_for_recordset=#{duration}" if ENV['KITCHEN_YAML'].nil?
       if record_set.nil?
         Chef::Log.info('AzureDns::RecordSet - 404 code, record set does not exist. Returning empty array.')
         []
@@ -62,8 +65,9 @@ module AzureDns
 
     def set_records_on_record_set(record_set_name, records, record_type, ttl)
       Chef::Log.info('AzureDns::RecordSet - Create/Update RecordSet')
+      start_time = Time.now.to_i
       begin
-        @dns_client.record_sets.create(name: record_set_name,
+        records = @dns_client.record_sets.create(name: record_set_name,
                                        resource_group: @dns_resource_group,
                                        zone_name: @zone,
                                        records: records,
@@ -75,9 +79,14 @@ module AzureDns
       rescue => e
         OOLog.fatal("AzureDns::RecordSet - Exception is: #{e.message}")
       end
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      puts "***TAG:az_set_records_for_recordset=#{duration}" if ENV['KITCHEN_YAML'].nil?
+      records
     end
 
     def remove_record_set(record_set_name, record_type)
+      start_time = Time.now.to_i
       begin
         record_set = @dns_client.record_sets.get(@dns_resource_group, record_set_name, @zone, record_type)
         !record_set.nil? ? record_set.destroy : Chef::Log.info('AzureDns::RecordSet - 404 code, trying to delete something that is not there.')
@@ -87,14 +96,21 @@ module AzureDns
       rescue => e
         OOLog.fatal("AzureDns::RecordSet - Exception is: #{e.message}")
       end
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      puts "***TAG:az_remove_recordset=#{duration}" if ENV['KITCHEN_YAML'].nil?
     end
 
     def exists?(record_set_name, record_type)
+      start_time = Time.now.to_i
       begin
         @dns_client.record_sets.check_record_set_exists(@dns_resource_group, record_set_name, @zone, record_type)
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Exception trying to check #{record_set_name}")
       end
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      puts "***TAG:az_exist_recordset=#{duration}" if ENV['KITCHEN_YAML'].nil?
     end
   end
 end

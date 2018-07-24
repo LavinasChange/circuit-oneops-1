@@ -11,7 +11,12 @@ module AzureNetwork
     end
 
     def get(resource_group_name, network_security_group_name)
-      @network_service.network_security_groups.get(resource_group_name, network_security_group_name)
+      start_time = Time.now.to_i
+      nsg = @network_service.network_security_groups.get(resource_group_name, network_security_group_name)
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      puts "***TAG:az_get_nsg=#{duration}" if ENV['KITCHEN_YAML'].nil?
+      nsg
     rescue MsRestAzure::AzureOperationError => e
       # If the error is that it doesn't exist, return nil
       OOLog.info("Error of Exception is: '#{e.body.values[0]}'")
@@ -28,7 +33,12 @@ module AzureNetwork
 
     def create(resource_group_name, net_sec_group_name, location)
       # Creates an empty network security group
-      @network_service.network_security_groups.create(name: net_sec_group_name, resource_group: resource_group_name, location: location, security_rules: [])
+      start_time = Time.now.to_i
+      nsg = @network_service.network_security_groups.create(name: net_sec_group_name, resource_group: resource_group_name, location: location, security_rules: [])
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      puts "***TAG:az_create_nsg=#{duration}" if ENV['KITCHEN_YAML'].nil?
+      nsg
     rescue MsRestAzure::AzureOperationError => e
       OOLog.fatal("AzureOperationError Exception trying to create network security group #{net_sec_group_name} response: #{e.body}")
     rescue => e
@@ -36,7 +46,12 @@ module AzureNetwork
     end
 
     def create_update(resource_group_name, net_sec_group_name, parameters)
-      @network_service.network_security_groups.create(name: net_sec_group_name, resource_group: resource_group_name, location: parameters.location, security_rules: parameters.security_rules)
+      start_time = Time.now.to_i
+      nsg = @network_service.network_security_groups.create(name: net_sec_group_name, resource_group: resource_group_name, location: parameters.location, security_rules: parameters.security_rules)
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      puts "***TAG:az_create_update_nsg=#{duration}" if ENV['KITCHEN_YAML'].nil?
+      nsg
     rescue MsRestAzure::AzureOperationError => e
       OOLog.fatal("AzureOperationError exception trying to create/update network security group #{net_sec_group_name} Error response: #{e.body}")
     rescue => e
@@ -52,11 +67,20 @@ module AzureNetwork
     end
 
     def delete_security_group(resource_group_name, net_sec_group_name)
+      start_time = Time.now.to_i
       nsg_exists = @network_service.network_security_groups.check_net_sec_group_exists(resource_group_name, net_sec_group_name)
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      puts "***TAG:az_check_nsg=#{duration}" if ENV['KITCHEN_YAML'].nil?
       if !nsg_exists
         OOLog.info("The NSG #{net_sec_group_name} does not exist. Moving on...")
       else
-        @network_service.network_security_groups.get(resource_group_name, net_sec_group_name).destroy
+        start_time = Time.now.to_i
+        response = @network_service.network_security_groups.get(resource_group_name, net_sec_group_name).destroy
+        end_time = Time.now.to_i
+        duration = end_time - start_time
+        puts "***TAG:az_delete_nsg=#{duration}" if ENV['KITCHEN_YAML'].nil?
+        response
       end
     rescue MsRestAzure::AzureOperationError => e
       OOLog.info("AzureOperationError Error deleting NSG #{net_sec_group_name}")
@@ -67,7 +91,8 @@ module AzureNetwork
 
     def create_or_update_rule(resource_group_name, network_security_group_name, security_rule_name, security_rule_parameters)
       # The Put network security rule operation creates/updates a security rule in the specified network security group group.
-      @network_service.network_security_rules.create(
+      start_time = Time.now.to_i
+      rule = @network_service.network_security_rules.create(
         name: security_rule_name,
         resource_group: resource_group_name,
         network_security_group_name: network_security_group_name,
@@ -80,6 +105,10 @@ module AzureNetwork
         priority: security_rule_parameters[:priority],
         direction: security_rule_parameters[:direction]
       )
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      puts "***TAG:az_create_update_nsg_rule=#{duration}" if ENV['KITCHEN_YAML'].nil?
+      rule
     rescue MsRestAzure::AzureOperationError => e
       OOLog.fatal("AzureOperationError trying to get the '#{security_rule_name}' Security Rule Response: #{e.body}")
     rescue => e
@@ -88,7 +117,12 @@ module AzureNetwork
 
     def delete_rule(resource_group_name, network_security_group_name, security_rule_name)
       # The delete network security rule operation deletes the specified network security rule.
-      @network_service.network_security_rules.get(resource_group_name, network_security_group_name, security_rule_name).destroy
+      start_time = Time.now.to_i
+      response = @network_service.network_security_rules.get(resource_group_name, network_security_group_name, security_rule_name).destroy
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      puts "***TAG:az_delete_nsg_rule=#{duration}" if ENV['KITCHEN_YAML'].nil?
+      response
     rescue MsRestAzure::AzureOperationError => e
       OOLog.fatal("AzureOperationError Error trying to delete the '#{security_rule_name}' Security Rule - Response: #{e.body}")
     rescue => e
@@ -97,7 +131,12 @@ module AzureNetwork
 
     def get_rule(resource_group_name, network_security_group_name, security_rule_name)
       # The Get NetworkSecurityRule operation retreives information about the specified network security rule.
-      @network_service.network_security_rules.get(resource_group_name, network_security_group_name, security_rule_name)
+      start_time = Time.now.to_i
+      rule = @network_service.network_security_rules.get(resource_group_name, network_security_group_name, security_rule_name)
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      puts "***TAG:az_get_nsg_rule=#{duration}" if ENV['KITCHEN_YAML'].nil?
+      rule
     rescue MsRestAzure::AzureOperationError => e
       OOLog.fatal("Error trying to get the '#{security_rule_name}' Security Rule - Response: #{e.body}")
     rescue => e
@@ -138,7 +177,12 @@ module AzureNetwork
     end
 
     def check_network_security_group_exists(resource_group_name, network_security_group_name)
-      @network_service.network_security_groups.check_net_sec_group_exists(resource_group_name, network_security_group_name)
+      start_time = Time.now.to_i
+      exist = @network_service.network_security_groups.check_net_sec_group_exists(resource_group_name, network_security_group_name)
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      puts "***TAG:az_check_nsg=#{duration}" if ENV['KITCHEN_YAML'].nil?
+      exist
     rescue MsRestAzure::AzureOperationError => e
       OOLog.fatal("AzureOperationError Exception trying to check existence of network security group #{network_security_group_name} response: #{e.body}")
     rescue Exception => e

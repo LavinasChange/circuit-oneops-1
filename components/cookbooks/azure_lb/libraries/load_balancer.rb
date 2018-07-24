@@ -28,6 +28,7 @@ module AzureNetwork
         return result
       end
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_get_subs_lb=#{duration}" if ENV['KITCHEN_YAML'].nil?
       result
     end
 
@@ -46,6 +47,7 @@ module AzureNetwork
         return result
       end
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_get_rg_lb=#{duration}" if ENV['KITCHEN_YAML'].nil?
       result
     end
 
@@ -62,6 +64,7 @@ module AzureNetwork
         return nil
       end
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_get_lb=#{duration}" if ENV['KITCHEN_YAML'].nil?
       result
     end
 
@@ -80,6 +83,7 @@ module AzureNetwork
         OOLog.fatal("Error creating/updating load balancer '#{load_balancer[:name]}'. #{ex.message} ")
       end
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_create_update_lb=#{duration}" if ENV['KITCHEN_YAML'].nil?
       result
     end
 
@@ -104,6 +108,7 @@ module AzureNetwork
       end_time = Time.now.to_i
       duration = end_time - start_time
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_delete_lb=#{duration}" if ENV['KITCHEN_YAML'].nil?
       result
     end
 

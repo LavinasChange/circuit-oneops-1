@@ -25,6 +25,7 @@ module AzureDns
     end
 
     def check_for_zone
+      start_time = Time.now.to_i
       begin
         zone_exists = @dns_client.zones.check_zone_exists(@resource_group, @zone_name)
       rescue MsRestAzure::AzureOperationError => e
@@ -32,7 +33,9 @@ module AzureDns
       rescue => e
         return false if e == 'ResourceNotFound'
       end
-
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      puts "***TAG:az_check_zone=#{duration}" if ENV['KITCHEN_YAML'].nil?
       if zone_exists
         OOLog.info("AzureDns:Zone - Zone Exists in the Resource Group: #{@resource_group}. No need to create ")
         true
@@ -43,13 +46,18 @@ module AzureDns
 
     def create
       OOLog.info("AzureDns:Zone - Creating Zone: #{@zone_name} in the Resource Group: #{@resource_group}.")
+      start_time = Time.now.to_i
       begin
-        @dns_client.zones.create(resource_group: @resource_group, name: @zone_name, location: 'global')
+        zone = @dns_client.zones.create(resource_group: @resource_group, name: @zone_name, location: 'global')
       rescue MsRestAzure::AzureOperationError => e
          OOLog.fatal("FATAL ERROR creating DNS Zone....: #{e.body}")
       rescue => e
         OOLog.fatal("DNS Zone creation error....: #{e.message}")
       end
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      puts "***TAG:az_create_zone=#{duration}" if ENV['KITCHEN_YAML'].nil?
+      zone
     end
   end
 end
