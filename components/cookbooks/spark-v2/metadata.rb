@@ -330,6 +330,75 @@ attribute 'history_server_port',
               :order => 8
           }
 
+attribute 'master_log_level',
+          :description => "Master Log Level",
+          :required => "required",
+          :default => "INFO",
+          :format => {
+              :help => 'Specify the log level to use for the Spark master.',
+              :category => '6.Logging Configuration',
+              :order => 1,
+              :filter => {'all' => {'visible' => 'is_client_only:eq:false'} },
+              :form => {:field => 'select', :options_for_select => [['OFF', 'OFF'], ['FATAL', 'FATAL'], ['ERROR', 'ERROR'], ['WARN', 'WARN'], ['INFO', 'INFO'], ['DEBUG', 'DEBUG'], ['ALL', 'ALL']]}
+          }
+
+attribute 'master_log_config',
+          :description => 'Master extra logging configuration',
+          :data_type => 'text',
+          :default => '',
+          :format => {
+              :category => '6.Logging Configuration',
+              :filter => {'all' => {'visible' => 'is_client_only:eq:false'} },
+              :help => 'Specify the Log4j configuration to add for the Spark master',
+              :order => 2
+          }
+
+attribute 'worker_log_level',
+          :description => "Worker Log Level",
+          :required => "required",
+          :default => "INFO",
+          :format => {
+              :help => 'Specify the log level to use for Spark workers.',
+              :category => '6.Logging Configuration',
+              :order => 3,
+              :filter => {'all' => {'visible' => 'is_client_only:eq:false'} },
+              :form => {:field => 'select', :options_for_select => [['OFF', 'OFF'], ['FATAL', 'FATAL'], ['ERROR', 'ERROR'], ['WARN', 'WARN'], ['INFO', 'INFO'], ['DEBUG', 'DEBUG'], ['ALL', 'ALL']]}
+          }
+
+attribute 'worker_log_config',
+          :description => 'Worker extra logging configuration',
+          :data_type => 'text',
+          :default => '',
+          :format => {
+              :category => '6.Logging Configuration',
+              :filter => {'all' => {'visible' => 'is_client_only:eq:false'} },
+              :help => 'Specify the Log4j configuration to add for Spark workers',
+              :order => 4
+          }
+
+attribute 'client_log_level',
+          :description => "Client Log Level",
+          :required => "required",
+          :default => "INFO",
+          :format => {
+              :help => 'Specify the log level to use for services on the Spark client. This includes the Thrift Server and the History Server.',
+              :category => '6.Logging Configuration',
+              :order => 5,
+              :filter => {'all' => {'visible' => 'is_client_only:eq:false'} },
+              :form => {:field => 'select', :options_for_select => [['OFF', 'OFF'], ['FATAL', 'FATAL'], ['ERROR', 'ERROR'], ['WARN', 'WARN'], ['INFO', 'INFO'], ['DEBUG', 'DEBUG'], ['ALL', 'ALL']]}
+          }
+
+attribute 'client_log_config',
+          :description => 'Client extra logging configuration',
+          :data_type => 'text',
+          :default => '',
+          :format => {
+              :category => '6.Logging Configuration',
+              :filter => {'all' => {'visible' => 'is_client_only:eq:false'} },
+              :help => 'Specify the Log4j configuration to add for services on the Spark client. This includes the Thrift Server and the History Server.',
+              :order => 6
+          }
+
 # Actions
 recipe "repair", "Repair Spark"
 recipe "restart", "Restart Spark"
