@@ -60,7 +60,7 @@ if binding_type == 'https'
                 ssl_password = site.cert_passphrase
         end
 
-    elsif !site.cert_ssl_data.nil? && !site.cert_ssl_password.nil
+    elsif !site.cert_ssl_data.nil? && !site.cert_ssl_data.empty? && !site.cert_ssl_password.nil? && !site.cert_ssl_data.empty?
         ssl_data = site[:cert_ssl_data]
         ssl_password = site.cert_ssl_password
     else
@@ -74,7 +74,7 @@ if binding_type == 'https'
          end
     end
 
-    if !ssl_data.nil? && !ssl_password.nil?
+    if !ssl_data.nil? && !ssl_data.empty? && !ssl_password.nil? && !ssl_password.empty?
         cert = OpenSSL::X509::Certificate.new(ssl_data)
         thumbprint = OpenSSL::Digest::SHA1.new(cert.to_der).to_s
         ssl_certificate_exists = true
@@ -84,6 +84,7 @@ if binding_type == 'https'
         end
     else
          Chef::Log.error("No Certificate found for activating https on this website")
+         exit 1
     end
 
 end
