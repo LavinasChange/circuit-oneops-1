@@ -21,7 +21,7 @@ module AzureBase
     def get
       begin
         start_time = Time.now.to_i
-        as = @compute_client.availability_sets.get(@rg_name, @as_name)
+        availability_set = @compute_client.availability_sets.get(@rg_name, @as_name)
       rescue MsRestAzure::AzureOperationError => e
         # if the error is that the availability set doesn't exist,
         # just return a nil
@@ -37,7 +37,7 @@ module AzureBase
       duration = end_time - start_time
       OOLog.info("Availability Set created in #{duration} seconds")
       puts "***TAG:az_get_availset=#{duration}" if ENV['KITCHEN_YAML'].nil?
-      as
+      availability_set
     end
 
     # this method will add the availability set if needed.
@@ -60,7 +60,7 @@ module AzureBase
           #if we are using the managed disk attached to vm availability set needs to setup use_managed_disk to true
 
 
-          as = @compute_client.availability_sets.create(resource_group: @rg_name, name: @as_name, location: @location, use_managed_disk: true, platform_fault_domain_count: Utils.get_fault_domains(@location
+          availability_set = @compute_client.availability_sets.create(resource_group: @rg_name, name: @as_name, location: @location, use_managed_disk: true, platform_fault_domain_count: Utils.get_fault_domains(@location
           ), platform_update_domain_count: Utils.get_update_domains)
         rescue MsRestAzure::AzureOperationError => e
           OOLog.fatal("Error adding an availability set: #{e.body}")
@@ -70,7 +70,7 @@ module AzureBase
         end_time = Time.now.to_i
         duration = end_time - start_time
         puts "***TAG:az_add_availset=#{duration}" if ENV['KITCHEN_YAML'].nil?
-        as
+        availability_set
       end
     end
 
