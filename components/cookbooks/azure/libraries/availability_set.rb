@@ -11,8 +11,9 @@ module AzureCompute
     # availability set name
     # will return whether or not the availability set exists.
     def get(resource_group, availability_set)
+      start_time = Time.now.to_i
       begin
-        @resource_client.availability_sets.get(resource_group, availability_set)
+        availability_set = @resource_client.availability_sets.get(resource_group, availability_set)
       rescue MsRestAzure::AzureOperationError => e
         # if the error is that the availability set doesn't exist,
         # just return a nil
@@ -24,6 +25,11 @@ module AzureCompute
       rescue => ex
         OOLog.fatal("Error getting availability set: #{ex.message}")
       end
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      OOLog.info("Availability Set created in #{duration} seconds")
+      puts "***TAG:az_get_availset=#{duration}" if ENV['KITCHEN_YAML'].nil?
+      availability_set
     end
 
     # this method will add the availability set if needed.
@@ -39,18 +45,19 @@ module AzureCompute
         # need to create the availability set
         OOLog.info("Creating Availability Set
                       '#{availability_set}' in #{location} region")
+        start_time = Time.now.to_i
         begin
-          start_time = Time.now.to_i
-          @resource_client.availability_sets.create(resource_group: resource_group, name: availability_set, location: locaton)
-          end_time = Time.now.to_i
-          duration = end_time - start_time
+          availability_set = @resource_client.availability_sets.create(resource_group: resource_group, name: availability_set, location: locaton)
         rescue MsRestAzure::AzureOperationError => e
           OOLog.fatal("Error adding an availability set: #{e.body}")
         rescue => ex
           OOLog.fatal("Error adding an availability set: #{ex.message}")
         end
-
+        end_time = Time.now.to_i
+        duration = end_time - start_time
         OOLog.info("Availability Set created in #{duration} seconds")
+        puts "***TAG:az_add_availset=#{duration}" if ENV['KITCHEN_YAML'].nil?
+        availability_set
       end
     end
   end

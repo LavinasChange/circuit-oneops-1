@@ -134,11 +134,11 @@ module AzureNetwork
     end
 
     def create_or_update(location, certificate_exist)
+      start_time = Time.now.to_i
       begin
         ssl_certificates = nil
         ssl_certificates = [@gateway_attributes[:ssl_certificate]] if certificate_exist
-
-        @application_gateway.gateways.create(
+        ag = @application_gateway.gateways.create(
           name: @ag_name,
           location: location,
           resource_group: @resource_group_name,
@@ -173,16 +173,25 @@ module AzureNetwork
       rescue => e
         OOLog.fatal("Gateway creation error....: #{e.message}")
       end
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      puts "***TAG:az_create_update_gateway=#{duration}" if ENV['KITCHEN_YAML'].nil?
+      ag
     end
 
     def delete
+      start_time = Time.now.to_i
       begin
-        @application_gateway.gateways.get(@resource_group_name, @ag_name).destroy
+        response = @application_gateway.gateways.get(@resource_group_name, @ag_name).destroy
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("FATAL ERROR deleting Gateway....: #{e.body}")
       rescue => e
         OOLog.fatal("Gateway deleting error....: #{e.body}")
       end
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      puts "***TAG:az_delete_gateway=#{duration}" if ENV['KITCHEN_YAML'].nil?
+      response
     end
 
     def get
@@ -198,17 +207,21 @@ module AzureNetwork
         return nil
       end
       OOLog.info("operation took #{duration} seconds")
+      puts "***TAG:az_get_gateway=#{duration}" if ENV['KITCHEN_YAML'].nil?
       result
     end
 
     def exists?
+      start_time = Time.now.to_i
       begin
         OOLog.info('Checking application gateway exists')
         result = @application_gateway.gateways.check_application_gateway_exists(@resource_group_name, @ag_name)
       rescue Exception => e
         OOLog.fatal("Error checking application gateway exists #{e.message}")
       end
-
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      puts "***TAG:az_exist_gateway=#{duration}" if ENV['KITCHEN_YAML'].nil?
       result
     end
   end

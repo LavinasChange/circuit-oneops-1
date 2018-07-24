@@ -49,7 +49,12 @@ class Datadisk
         if check_blob_exist("#{vhd_blobname}.vhd")
           OOLog.fatal('disk name exists already')
         else
-          @storage_client.create_disk(vhd_blobname, slice_size.to_i, options = {})
+          start_time = Time.now.to_i
+          response = @storage_client.create_disk(vhd_blobname, slice_size.to_i, options = {})
+          end_time = Time.now.to_i
+          duration = end_time - start_time
+          puts "***TAG:az_create_disk=#{duration}" if ENV['KITCHEN_YAML'].nil?
+          response
         end
       end
     rescue MsRestAzure::AzureOperationError => e
@@ -84,7 +89,11 @@ class Datadisk
         i = i + 1
         next
       end
+      start_time = Time.now.to_i
       vm.attach_data_disk(data_disk_name, slice_size, storage_account_name)
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      puts "***TAG:az_attach_disk=#{duration}" if ENV['KITCHEN_YAML'].nil?
       OOLog.info("Adding #{dev_id} to the dev list")
       i = i + 1
     end
@@ -93,6 +102,7 @@ class Datadisk
 
   def check_blob_exist(blob_name)
     container = 'vhds'
+    start_time = Time.now.to_i
     begin
       blob_prop = @storage_client.get_blob_properties(container, blob_name)
     rescue Exception => e
@@ -100,6 +110,9 @@ class Datadisk
       OOLog.debug(e.message.inspect)
       return false
     end
+    end_time = Time.now.to_i
+    duration = end_time - start_time
+    puts "***TAG:az_check_blob=#{duration}" if ENV['KITCHEN_YAML'].nil?
     Chef::Log.info("Blob properties #{blob_prop.inspect}")
     if blob_prop != nil
       OOLog.info('disk exists')
@@ -109,6 +122,7 @@ class Datadisk
 
   def get_storage_access_key
     OOLog.info('Getting storage account keys ....')
+    start_time = Time.now.to_i
     begin
       storage_account_keys = @storage_client.get_storage_access_keys(@rg_name_persistent_storage, @storage_account_name)
     rescue MsRestAzure::AzureOperationError => e
@@ -116,6 +130,9 @@ class Datadisk
     rescue Exception => ex
       OOLog.fatal(ex.message)
     end
+    end_time = Time.now.to_i
+    duration = end_time - start_time
+    puts "***TAG:az_get_sa_keys=#{duration}" if ENV['KITCHEN_YAML'].nil?
     OOLog.info('Storage_account_keys : ' + storage_account_keys.inspect)
     key2 = storage_account_keys[1]
     raise unless key2.key_name == 'key2'
@@ -147,7 +164,11 @@ class Datadisk
       begin
         if retry_count > 0
           OOLog.info("Trying to delete the disk page (page blob):#{blob_name} ....")
+          start_time = Time.now.to_i
           delete_result = @storage_client.delete_blob(container, blob_name)
+          end_time = Time.now.to_i
+          duration = end_time - start_time
+          puts "***TAG:az_delete_disk=#{duration}" if ENV['KITCHEN_YAML'].nil?
         end
         retry_count = retry_count-1
       end until delete_result || retry_count == 0
@@ -178,7 +199,12 @@ class Datadisk
       #Detach a data disk
       unless vm.nil?
         OOLog.info('updating VM with these properties' + vm.inspect)
-        vm.detach_data_disk(diskname)
+        start_time = Time.now.to_i
+        response = vm.detach_data_disk(diskname)
+        end_time = Time.now.to_i
+        duration = end_time - start_time
+        puts "***TAG:az_detach_disk=#{duration}" if ENV['KITCHEN_YAML'].nil?
+        response
       end
     end
   end

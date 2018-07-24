@@ -65,22 +65,31 @@ module AzureCompute
       begin
         OOLog.info("Deleting OS Managed Disk '#{managed_diskname}' in '#{resource_group_name}' ")
         start_time = Time.now.to_i
-
         managed_disk_exists = @compute_client.managed_disks.check_managed_disk_exists(resource_group_name, managed_diskname)
-		    if !managed_disk_exists
-          OOLog.info("Managed disk '#{managed_diskname}' was not found in '#{resource_group_name}', skipping deletion..")
-		    else
-          os_managed_disk = @compute_client.managed_disks.get(resource_group_name, managed_diskname)
-          os_managed_disk.destroy
-		    end
         end_time = Time.now.to_i
         duration = end_time - start_time
+        puts "***TAG:az_check_managed_disk=#{duration}" if ENV['KITCHEN_YAML'].nil?
+		    if !managed_disk_exists
+          OOLog.info("Managed disk '#{managed_diskname}' was not found in '#{resource_group_name}', skipping deletion..")
+        else
+          start_time = Time.now.to_i
+          os_managed_disk = @compute_client.managed_disks.get(resource_group_name, managed_diskname)
+          end_time = Time.now.to_i
+          duration = end_time - start_time
+          puts "***TAG:az_get_managed_disk=#{duration}" if ENV['KITCHEN_YAML'].nil?
+          start_time = Time.now.to_i
+          response = os_managed_disk.destroy
+          end_time = Time.now.to_i
+          duration = end_time - start_time
+          puts "***TAG:az_delete_managed_disk=#{duration}" if ENV['KITCHEN_YAML'].nil?
+		    end
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error deleting Managed Disk '#{managed_diskname}' in ResourceGroup '#{resource_group_name}'. Exception: #{e.body}")
       rescue => e
         OOLog.fatal("Error deleting Managed Disk  '#{managed_diskname}' in ResourceGroup '#{resource_group_name}'. Exception: #{e.message}")
       end
       OOLog.info(" Deleting OS Managed disk operation took #{duration} seconds")
+      response
     end
 
     # Below code needs to be removed after migrating Unmanaged disk to managed disks
@@ -110,13 +119,16 @@ module AzureCompute
 
         OOLog.info("VM size: #{@size_id}")
         OOLog.info("Storage Type: #{sku_name}_#{replication}")
-
+        start_time = Time.now.to_i
         storage_account =
             @storage_client.storage_accounts.create({name: storage_account_name,
                                                      resource_group: @resource_group_name,
                                                      location: @location,
                                                      sku_name: sku_name,
                                                      replication: replication})
+        end_time = Time.now.to_i
+        duration = end_time - start_time
+        puts "***TAG:az_create_sa=#{duration}" if ENV['KITCHEN_YAML'].nil?
         if storage_account.nil?
           OOLog.fatal("***FAULT:FATAL=Could not create storage account #{storage_account_name}")
         end
@@ -205,7 +217,11 @@ module AzureCompute
 
     def get_resource_group_vm_count
       vm_count = 0
+      start_time = Time.now.to_i
       vm_list = @compute_client.servers(resource_group: @resource_group_name)
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      puts "***TAG:az_get_vm_count=#{duration}" if ENV['KITCHEN_YAML'].nil?
       if !vm_list.nil? and !vm_list.empty?
         vm_count = vm_list.size
       else
@@ -215,6 +231,7 @@ module AzureCompute
     end
 
     def storage_name_avail?(storage_account_name)
+      start_time = Time.now.to_i
       begin
         response =
             @storage_client.storage_accounts.check_name_availability(storage_account_name, 'Microsoft.Storage/storageAccounts')
@@ -226,10 +243,14 @@ module AzureCompute
       rescue => ex
         OOLog.fatal("Error checking availability of #{storage_account_name}: #{ex.message}")
       end
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      puts "***TAG:az_sa_name_avail=#{duration}" if ENV['KITCHEN_YAML'].nil?
       response
     end
 
     def storage_account_created?(storage_account_name)
+      start_time = Time.now.to_i
       begin
         response =
             @storage_client.storage_accounts.check_storage_account_exists(@resource_group_name, storage_account_name)
@@ -240,6 +261,9 @@ module AzureCompute
       rescue => ex
         OOLog.fatal("Error getting properties of #{storage_account_name}: #{ex.message}")
       end
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      puts "***TAG:az_sa_created=#{duration}" if ENV['KITCHEN_YAML'].nil?
       response
     end
 # Above block code needs to be removed after migrating all Unmanaged vms moved to managed VMS
