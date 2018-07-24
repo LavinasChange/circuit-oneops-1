@@ -315,6 +315,33 @@ Chef::Log.info("tmp_vol_size=#{tmp_vol_size}")
 Chef::Log.info("log_max_size_total=#{log_max_size_total}")
 Chef::Log.info("max_file_size=#{max_file_size}")
 
+# Determine the daemon logging configuration
+default_log_level = "INFO"
+extra_log_config = ""
+
+if is_spark_master
+  if configNode.has_key?('master_log_level')
+    default_log_level = configNode['master_log_level']
+  end
+  if configNode.has_key?('master_log_config')
+    extra_log_config = configNode['master_log_config']
+  end
+elsif is_client_only
+  if configNode.has_key?('client_log_level')
+    default_log_level = configNode['client_log_level']
+  end
+  if configNode.has_key?('client_log_config')
+    extra_log_config = configNode['client_log_config']
+  end
+else
+  if configNode.has_key?('worker_log_level')
+    default_log_level = configNode['worker_log_level']
+  end
+  if configNode.has_key?('worker_log_config')
+    extra_log_config = configNode['worker_log_config']
+  end
+end
+
 template "#{spark_dir}/conf/log4j-daemon.properties" do
   source 'log4j-daemon.properties.erb'
   mode   '0644'
@@ -322,7 +349,9 @@ template "#{spark_dir}/conf/log4j-daemon.properties" do
   group  'spark'
   variables ({
     :max_file_size => max_file_size,
-    :num_log_backups => num_log_backups
+    :num_log_backups => num_log_backups,
+    :default_log_level => default_log_level,
+    :extra_log_config => extra_log_config
   })
 end
 
