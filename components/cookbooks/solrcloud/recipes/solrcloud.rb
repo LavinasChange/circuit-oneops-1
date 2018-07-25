@@ -495,20 +495,24 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
     action :nothing
   end
 
-  # executing the performance test script
-  execute "performance_test" do
-    command "ruby /opt/solr-recipes/vm-performance-stats/performance_test.rb"
-  end
-  ruby_block 'parsing the performance_test_log file' do
-    block do
-      begin
-        file = File.open("/opt/solr/log/performance_test_log.txt", "rb")
-        contents = file.read
-        puts contents
-      rescue Exception => e
-        puts(e.message)
+  # executing the performance test script (execute only during first provision and during replace and not on updates)
+  if node['action_name'] =~ /add|replace/
+
+    execute "performance_test" do
+      command "ruby /opt/solr-recipes/vm-performance-stats/performance_test.rb"
+    end
+    ruby_block 'parsing the performance_test_log file' do
+      block do
+        begin
+          file = File.open("/opt/solr/log/performance_test_log.txt", "rb")
+          contents = file.read
+          puts contents
+        rescue Exception => e
+          puts(e.message)
+        end
       end
     end
+
   end
 
   # Note: No restart on update. User should manually restart (rolling restart) from action on update
