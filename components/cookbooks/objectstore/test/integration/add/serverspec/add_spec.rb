@@ -6,7 +6,7 @@ OBJECTSTORE_EXE_FILE   = '/usr/local/bin/objectstore'.freeze
 OBJECTSTORE_CREDS_FILE = '/etc/objectstore_config.json'.freeze
 
 TEST_CONTAINER_NAME    = "test-#{$node['workorder']['rfcCi']['rfcId']}".freeze
-TEST_CONTAINER_NAME_2    = "test-#{$node['workorder']['rfcCi']['rfcId']}2".freeze
+TEST_CONTAINER_NAME_2    = "test-#{$node['workorder']['rfcCi']['rfcId']}-2".freeze
 TEST_BLOB_NAME         = 'test-blob'.freeze
 TEST_BLOB_NAME_2       = 'test-blob-2'.freeze
 MAIN_DIR_NAME          = 'test-dir'.freeze
