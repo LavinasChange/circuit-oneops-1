@@ -87,8 +87,8 @@ def upload_directory_or_file(conn, argv, provider)
       puts 'Invalid container name length, length should be 3-63 characters'
       exit 1
     end
-    if destination_directory !~ /^[a-z0-9]+(\d*\-\d*)[a-z0-9]+$/
-      puts 'Invalid container name, name should have lowercase alphanumeric and dash only'
+    if destination_directory !~ /^([a-z0-9]+\-)+[a-z0-9]+$/
+      puts 'Invalid container name, name should have lowercase alphanumeric and dashes only'
       exit 1
     end
     if source_file_or_dir.length > 1024
