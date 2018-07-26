@@ -14,14 +14,35 @@ jobTypesDir = baasDir + "/jobtypes"
 driverDir =  baasDir + "/" + "#{node['baas-job']['baas-driver-dir']}"
 logsDir = baasDir + "/logs"
 
-baas_service = node[:workorder][:services][:baascloudservice]
-if !baas_service.nil? && !baas_service[cloud_name].nil?
-  baas_cloud_service = node[:workorder][:services][:baascloudservice][cloud_name][:ciAttributes]
-  Chef::Log::info("baas_repo_url == " + baas_cloud_service[:repository_url])
-  Chef::Log::info("driver_version == " + baas_cloud_service[:driver_version])
-else
-  Chef::Log.error("baascloudservice cloud service not defined for this cloud, so cannot proceed with deployment")
-  exit 1
+repo_url = ""
+
+cloud_name = node[:workorder][:cloud][:ciName]
+Chef::Log::info("Got cloud name as #{cloud_name}")
+
+if node[:workorder][:payLoad].has_key?(:OO_LOCAL_VARS)
+    local_vars = node.workorder.payLoad.OO_LOCAL_VARS
+    local_vars_index = local_vars.index { |resource| resource[:ciName] == 'driver_repo_url' }
+
+    if !local_vars_index.nil?
+      repo_url = local_vars[local_vars_index][:ciAttributes][:value]
+      Chef::Log::info("Got repo URL via local variable #{repo_url}")
+    end
+  end
+  
+# Look in the defined service if not set by cloud variable
+if repo_url == ""
+  if (!node[:workorder][:services]["maven"].nil?)
+    repo_url = node[:workorder][:services]['maven'][cloud_name][:ciAttributes][:url]
+    Chef::Log::info("Got repo url from cloud service as #{repo_url}")
+  end
+end
+Chef::Log::info("Final resolution for repo url as #{repo_url}")
+
+if repo_url == ""
+  puts "***FAULT:FATAL=The Repo URL has not been specified. It needs to be set either by defining 'driver_repo_url' local variable in your platform or by adding 'nexus' service to your cloud by OneOps admins."
+  e = Exception.new("no backtrace")
+  e.set_backtrace("")
+  raise e
 end
 
 ### Create baas driver directory ###
@@ -36,12 +57,12 @@ end
 
 ### Download driver jar file ###
 Chef::Log::info("Downloading the baas driver jar...")
-driverRepoUrl = baas_cloud_service[:repository_url]
+driverRepoUrl = "#{repo_url}content/repositories/pangaea_releases/com/walmart/platform/baas/baas-oneops"
 driverVersion = "#{node['baas-job']['driver-version']}"
 Chef::Log.info("User-provided driver-version value == #{driverVersion}")
 if driverVersion.to_s.empty?
-  driverVersion = baas_cloud_service[:driver_version]
-  Chef::Log.info("Setting driverVersion value to cloud-service defined value == #{driverVersion}")
+  driverVersion = "#{node['baas-job']['driver-version']}"
+  Chef::Log.info("Setting driverVersion value to default value == #{driverVersion}")
 end
 
 driverJarNexusUrl = driverRepoUrl + "/" + driverVersion + "/baas-oneops-" + driverVersion + ".jar"

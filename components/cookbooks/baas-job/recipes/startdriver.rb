@@ -36,10 +36,8 @@ end
 
 Chef::Log.info("User-provided driver-version value == #{driverVersion}")
 if driverVersion.to_s.empty?
-  cloud_name = node[:workorder][:cloud][:ciName]
-  baas_cloud_service = node[:workorder][:services][:baascloudservice][cloud_name][:ciAttributes]
-  driverVersion = baas_cloud_service[:driver_version]
-  Chef::Log.info("Setting driverVersion value to default cloud-service defined value == #{driverVersion}")
+  driverVersion = node['baas-job']['driver-version']
+  Chef::Log.info("Setting driverVersion value to default value == #{driverVersion}")
 end
 
 logsDir = baasDir + "/logs"

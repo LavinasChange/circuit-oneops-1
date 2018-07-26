@@ -970,10 +970,10 @@ resource "baas-job",
   :design => true,
   :requires => {
     "constraint" => "0..1",
-    'services' => 'baascloudservice'
+    'services' => '*baascloudservice,*maven'
    },
   :attributes => {
-    "driver-version" => "",
+    "driver-version" => "4.69.0",
     "driver-id" => "",
     "run-env" => "",
     "job_map_1" => "{}",
