@@ -211,7 +211,9 @@ ruby_block 'install base' do
     # To avoid KCI failure
     if node[:workorder].has_key?('config') && node[:workorder][:config].has_key?('TESTING_MODE') && node[:workorder][:config][:TESTING_MODE].downcase == "true"
       cmd = "#{ssh_interactive_cmd} gem install net-telnet -v 0.1.1"
-      shell_out(cmd, :timeout => shell_timeout)
+      result = shell_out(cmd, :timeout => shell_timeout)
+      data = result.stdout.gsub("\n","")
+      puts "gem install status : #{data}"
     end
   end
 end
