@@ -209,15 +209,10 @@ ruby_block 'install base' do
     puts "***RESULT:ram=#{ram}"
 
     # To avoid KCI failure
-    if node[:workorder].has_key?('config') && node[:workorder][:config].has_key?('TESTING_MODE') && node[:workorder][:config][:TESTING_MODE].downcase == "true"
-      if node[:ostype] =~ /ubuntu/
-        cmd = "#{ssh_interactive_cmd} sudo gem install net-telnet -v 0.1.1"
-      else
-        cmd = "#{ssh_interactive_cmd} gem install net-telnet -v 0.1.1"
-      end
-      result = shell_out(cmd, :timeout => shell_timeout)
-      data = result.stdout.gsub("\n","")
-      puts "gem install status : #{data}"
+    if node[:workorder].has_key?('config') && node[:workorder][:config].has_key?('TESTING_MODE') && node[:workorder][:config][:TESTING_MODE].downcase == "true" &&
+      !(os_type =~ /windows/)
+      cmd = "#{ssh_interactive_cmd} sudo touch /tmp/testmode.txt"
+      shell_out(cmd, :timeout => shell_timeout)
     end
   end
 end
