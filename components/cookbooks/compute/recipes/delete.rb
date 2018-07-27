@@ -21,7 +21,7 @@ include_recipe "shared::set_provider_new"
 
 Chef::Log.info("compute::delete -- name: #{node[:server_name]}")
 
-if node[:provider_class] =~ /vagrant|virtualbox|docker|lxd/
+if node[:provider_class] =~ /vagrant|virtualbox|docker|lxd|openstack/
   include_recipe "compute::del_node_#{node[:provider_class]}"
 elsif node[:provider_class] =~ /azure/
   include_recipe 'azure::del_node'
