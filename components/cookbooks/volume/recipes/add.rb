@@ -486,7 +486,7 @@ ruby_block 'filesystem' do
 
       if type == 'data'
         cmd = "mkfs -t #{_fstype} #{f_switch} #{_device}"
-        execute_command(cmd, true)
+        execute_command(cmd, true, 7200)
       end
 
       # in-line because of the ruby_block doesn't allow updated _device value passed to mount resource
