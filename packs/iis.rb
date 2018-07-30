@@ -129,7 +129,8 @@ resource "iis-website",
    :design        => true,
    :requires      => {
    :constraint    => "0..*",
-   :help          => "Installs web applications"
+   :help          => "Installs web applications",
+   :services      => "*mirror,*certificate"
    },
     :attributes   => {
        :package_name                => '',
