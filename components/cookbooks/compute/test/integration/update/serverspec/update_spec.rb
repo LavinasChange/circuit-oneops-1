@@ -8,8 +8,10 @@ require "#{COOKBOOKS_PATH}/azure_base/test/integration/spec_utils"
 provider = SpecUtils.new($node).get_provider
 
 case provider
-  when /openstack/
-    require "#{COOKBOOKS_PATH}/compute/test/integration/add/serverspec/openstack.rb"
-  else
-    puts "No tests for provider: #{provider}"
+when /openstack/
+  require "#{COOKBOOKS_PATH}/compute/test/integration/add/serverspec/openstack.rb"
+when /azure/
+  require "#{COOKBOOKS_PATH}/azure/test/integration/update/serverspec/tests/update.rb"
+else
+  puts "No tests for provider: #{provider}"
 end
