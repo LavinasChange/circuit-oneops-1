@@ -268,7 +268,13 @@ ruby_block 'setup bind and dhclient' do
     if attrs[:dhclient] == 'true'
       Chef::Log.info("starting: #{dhclient_cmdline}")
       output = `#{dhclient_cmdline}`
-      Chef::Log.info("returned: #{output} exitstatus: #{$?.exitstatus}")
+      status = $?.exitstatus
+
+      if status.to_i != 0
+        exit_with_error "Could not start dhclient. exitstatus: #{status}. Command returned: #{output}"
+      else
+        Chef::Log.info("returned: #{output} exitstatus: #{status}")
+      end
 
     else
        Chef::Log.info('will not start dhclient because dhclient not desired')
