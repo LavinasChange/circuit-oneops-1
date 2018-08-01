@@ -109,6 +109,7 @@ end
 if !bindings.nil?
   !bindings.each do |sg|
     sg_name = sg["servicegroupname"]
+    next if !sg_name.include? cloud_name
     resp_obj = JSON.parse(conn.request(:method=>:get, :path=>"/nitro/v1/config/servicegroup/#{sg_name}").body)
 
     exists = resp_obj["message"] =~ /Done/ ? true : false
