@@ -41,7 +41,7 @@ cron "#{ci[:ciAttributes][:user]} #{ci[:ciName]}" do
   mailto vars['MAILTO'] if vars.has_key?('MAILTO') && !vars['MAILTO'].empty?
   # workaround to reset mailto in multi-job/cron case
   # https://tickets.opscode.com/browse/CHEF-1670
-  mailto '""' if vars['MAILTO'].empty?    
+  mailto '""' if !vars.has_key?('MAILTO') || vars['MAILTO'].empty?
   path vars['PATH'] if vars.has_key?('PATH') && !vars['PATH'].empty?
   action :create
 end
