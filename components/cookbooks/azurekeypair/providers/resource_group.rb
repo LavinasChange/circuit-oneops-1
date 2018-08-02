@@ -20,6 +20,13 @@ action :destroy do
     rg_manager = AzureBase::ResourceGroupManager.new(@new_resource.node)
     is_new_cloud = rg_manager.is_new_cloud
 
+    resource_group_exists = rg_manager.exists?
+
+    unless resource_group_exists
+      OOLog.info("ResourceGroup #{rg_manager.rg_name} Not Found. It might have been deleted already")
+      next
+    end
+
     if is_new_cloud
       begin
         avset_manager = AzureBase::AvailabilitySetManager.new(@new_resource.node)
