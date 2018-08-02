@@ -137,6 +137,13 @@ ruby_block 'set flavor/image/availability_zone' do
       puts "***RESULT:instance_id=#{server.id}" unless server.nil?
     end
 
+    if !server.nil? && server.state.eql?('BUILD')
+      msg = "vm #{server.id} is stuck in #{server.state} state"
+      Chef::Log.warn("#{msg}. Deleting it...")
+      run_context.include_recipe 'compute::del_node_openstack'
+      server = nil
+    end
+
     if server.nil?
       # size / flavor
       flavor = conn.flavors.get node.size_id
@@ -223,7 +230,7 @@ ruby_block 'set flavor/image/availability_zone' do
       Chef::Log.debug("max_wait_for_initialize_value: #{max_wait_for_initialize_value}")
       Chef::Log.info("max_wait_for_initialize_value => SET")
 
-    elsif ["BUILD","ERROR"].include?(server.state)
+    elsif server.state.eql? 'ERROR'
       msg = "vm #{server.id} is stuck in #{server.state} state"
       if defined?(server.fault)
         msg = "vm state: #{server.state} " + "fault message: " + server.fault["message"] + " fault code: " + server.fault["code"].to_s if !server.fault.nil? && !server.fault.empty?
@@ -420,7 +427,6 @@ ruby_block 'create server' do
       end_time = Time.now.to_i
       duration = end_time - start_time
       Chef::Log.info("server ready in: #{duration}s")
-
     end
 
     puts "***RESULT:availability_zone=#{availability_zone}"

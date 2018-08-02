@@ -44,6 +44,11 @@ delete_vm_ip = node[:workorder][:rfcCi][:ciAttributes][:dns_record]
 cloud_name = node[:workorder][:cloud][:ciName]
 provider_service = node[:workorder][:services][:dns][cloud_name][:ciClassName].split(".").last.downcase
 
+if delete_vm_ip.nil?
+  Chef::Log.warn('No DNS Record Found for the VM. Exiting.')
+  return
+end
+
 # Support only infoblox cleanup
 if provider_service.eql?("infoblox")
   include_recipe "fqdn::get_infoblox_connection"
