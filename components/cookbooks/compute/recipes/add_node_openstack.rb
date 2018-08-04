@@ -140,7 +140,7 @@ ruby_block 'set flavor/image/availability_zone' do
     if !server.nil? && server.state.eql?('BUILD')
       msg = "vm #{server.id} is stuck in #{server.state} state"
       Chef::Log.warn("#{msg}. Deleting it...")
-      run_context.include_recipe 'compute::del_node_openstack'
+      run_context.include_recipe 'compute::delete'
       server = nil
     end
 
