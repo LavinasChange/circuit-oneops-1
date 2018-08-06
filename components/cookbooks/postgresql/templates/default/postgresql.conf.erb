@@ -509,8 +509,6 @@ default_set = {
   'shared_buffers' => "24MB",            # min 128kB or max_connections*16kB
   'log_line_prefix' => "'%t '",            # special values:
   'datestyle' => "'iso, mdy'",
-  'archive_mode' => "off",        # allows archiving to be done
-  'archive_command' => "'cp \"%p\" #{node[:postgresql][:dir]}/archivedir/\"%f\"'",        # command to use to archive a logfile segment
   'default_text_search_config' => "'pg_catalog.english'"
 }
 
@@ -529,6 +527,8 @@ default_set.merge(JSON.parse(node.workorder.rfcCi.ciAttributes[:postgresql_conf]
       <% if node.workorder.cloud.ciAttributes.priority.to_i < 2 %>		
 		<%- {
 		  'wal_level' => "hot_standby",
+                  'archive_mode' => "on",        # allows archiving to be done
+		  'archive_command' => "'cp \"%p\" #{node[:postgresql][:dir]}/archivedir/\"%f\"'",        # command to use to archive a logfile segment
 		  'max_wal_senders' => 3,
 		  'wal_keep_segments' => 32
 		}.each do |param,value| %>
