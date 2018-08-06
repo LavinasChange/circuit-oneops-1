@@ -89,7 +89,7 @@ attribute 'run-env',
 
 attribute 'driver-version',
   :description => 'BaaS driver version',
-  :default => "4.67.4",
+  :default => "4.69.0",
   :required => "optional",
   :format => {
     :help => 'Version for BaaS driver app',

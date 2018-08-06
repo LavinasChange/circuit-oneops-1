@@ -21,7 +21,7 @@ include_recipe "shared::set_provider_new"
 
 Chef::Log.info("compute::delete -- name: #{node[:server_name]}")
 
-if node[:provider_class] =~ /vagrant|virtualbox|docker|lxd/
+if node[:provider_class] =~ /vagrant|virtualbox|docker|lxd|openstack/
   include_recipe "compute::del_node_#{node[:provider_class]}"
 elsif node[:provider_class] =~ /azure/
   include_recipe 'azure::del_node'
@@ -43,6 +43,11 @@ end
 delete_vm_ip = node[:workorder][:rfcCi][:ciAttributes][:dns_record]
 cloud_name = node[:workorder][:cloud][:ciName]
 provider_service = node[:workorder][:services][:dns][cloud_name][:ciClassName].split(".").last.downcase
+
+if delete_vm_ip.nil?
+  Chef::Log.warn('No DNS Record Found for the VM. Exiting.')
+  return
+end
 
 # Support only infoblox cleanup
 if provider_service.eql?("infoblox")

@@ -225,3 +225,10 @@ if !node['fast_image']
   end
 end
 include_recipe "os::postfix" unless provider == "docker"
+
+testing_mode = "/tmp/testmode.txt"
+
+if ::File.exists?(testing_mode)
+  cmd = "gem install net-telnet -v 0.1.1"
+  execute cmd
+end

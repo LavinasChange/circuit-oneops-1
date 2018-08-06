@@ -4,8 +4,10 @@ def exit_with_error(msg)
   Chef::Application.fatal!(msg)
 end
 
-def execute_command(command, force_failure = nil)
-  result = Mixlib::ShellOut.new(command).run_command
+def execute_command(command, force_failure = nil, timeout = nil)
+  sh = Mixlib::ShellOut.new(command)
+  sh.timeout = timeout if timeout
+  result = sh.run_command
   if !result.valid_exit_codes.include?(result.exitstatus)
     if force_failure
       exit_with_error("Error in #{command}: #{result.stderr.gsub(/\n+/, '.')}")

@@ -60,7 +60,7 @@ if binding_type == 'https'
                 ssl_password = site.cert_passphrase
         end
 
-    elsif !site.cert_ssl_data.nil? && !site.cert_ssl_data.empty? && !site.cert_ssl_password.nil? && !site.cert_ssl_data.empty?
+    elsif site.has_key?('cert_ssl_data') && !site.cert_ssl_data.nil? && !site.cert_ssl_data.empty? && site.has_key?('cert_ssl_password') && !site.cert_ssl_password.nil? && !site.cert_ssl_password.empty?
         ssl_data = site[:cert_ssl_data]
         ssl_password = site.cert_ssl_password
     else

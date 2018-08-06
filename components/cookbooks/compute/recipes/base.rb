@@ -207,5 +207,12 @@ ruby_block 'install base' do
     result = shell_out(cmd, :timeout => shell_timeout)
     ram = result.stdout.gsub("\n","")
     puts "***RESULT:ram=#{ram}"
+
+    # To avoid KCI failure
+    if node[:workorder].has_key?('config') && node[:workorder][:config].has_key?('TESTING_MODE') && node[:workorder][:config][:TESTING_MODE].downcase == "true" &&
+      !(os_type =~ /windows/)
+      cmd = "#{ssh_interactive_cmd} sudo touch /tmp/testmode.txt"
+      shell_out(cmd, :timeout => shell_timeout)
+    end
   end
 end

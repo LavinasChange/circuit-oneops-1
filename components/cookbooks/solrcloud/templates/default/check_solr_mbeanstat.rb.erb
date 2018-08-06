@@ -9,9 +9,7 @@
 
 require 'net/http'
 require 'rubygems'
-require 'xmlsimple'
 require 'json'
-require 'excon'
 require 'open-uri'
 require '/opt/nagios/libexec/solr_util.rb'
 require '/opt/solr/solrmonitor/rest_client.rb'
@@ -47,7 +45,7 @@ if monitor == "MemoryStats"
 
   perf = nil
 
-  if coll_list != nil then
+  if coll_list != nil && !coll_list.empty? then
     parsed_coll_list = JSON.parse(coll_list)
     collections =  parsed_coll_list["collections"]
 
