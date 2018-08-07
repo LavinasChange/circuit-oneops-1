@@ -39,13 +39,19 @@ if kafka_version.to_i < 1
 	end
 
 	# uninstall kafka rpm
-	execute "remove kafka" do
+	execute "remove kafka rpm" do
 		user "root"
 		exists = <<-EOF
 		rpm -qa | grep 'kafka'
 		EOF
-		command "rpm -e $(rpm -qa '*kafka*'); rm -rf /usr/local/kafka/*"
+		command "rpm -e $(rpm -qa '*kafka*')"
 		only_if exists, :user => "root"
+	end
+	
+	# uninstall kafka
+	execute "remove kafka" do
+		user "root"
+		command "rm -rf /usr/local/kafka/*; rm -rf /usr/local/kafka/kafka_2.11-#{kafka_version}*"
 	end
 
 	remote_file "#{node['mirrormaker'][:rpm_dir]}/kafka.rpm" do
