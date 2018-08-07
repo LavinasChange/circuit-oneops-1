@@ -21,6 +21,12 @@ SERVICE_STARTUP_TYPE = {
   'disabled'     => 4
 }
 
+TOPSHELF_STARTUP_TYPE = {
+  'auto start'   => 'autostart',
+  'demand start' => 'manual',
+  'disabled'     => 'disabled'
+}
+
 SERVICE_RECOVERY_TYPE = {
   'TakeNoAction' => 0,
   'RestartService' => 1,
@@ -37,6 +43,7 @@ def load_current_resource
   @service_windows = OO::WindowsService.new
 
   @current_resource.service_name(new_resource.service_name)
+  @current_resource.service_type(new_resource.service_type)
 
   if @service_windows.service_exists?(@current_resource.service_name)
     service_attributes = @service_windows.get_windows_service_attribute(@current_resource.service_name)
@@ -52,7 +59,35 @@ action :create do
   if @service_windows.service_exists?(new_resource.service_name)
     Chef::Log.info "The service #{new_resource.service_name} already exist."
   else
-    @service_windows.create_service(get_windows_service_attributes)
+    if new_resource.service_type.downcase == "topshelf"
+      account = ''
+
+      if new_resource.username.eql?('NT AUTHORITY\NetworkService')
+        account = '--networkservice'
+      elsif new_resource.username.eql?('NT AUTHORITY\LocalService')
+        account = '--localservice'
+      else
+        account = "-username \"#{new_resource.username}\" -password \"#{new_resource.password}\""
+      end
+      script = "#{new_resource.path} install "\
+               "-servicename \"#{new_resource.service_name}\" "\
+               "-displayname \"#{new_resource.service_display_name}\" "\
+               "--#{TOPSHELF_STARTUP_TYPE[new_resource.startup_type]} "\
+               "#{account}"
+
+      Chef::Log.info "script #{script}"
+
+
+      powershell_script "windows service #{new_resource.service_name}" do
+        code script
+      end
+
+      Chef::Log.info "Topshelf windows service #{new_resource.service_name}"
+
+    else
+      @service_windows.create_service(get_windows_service_attributes)
+      Chef::Log.info "Traditional windows service #{new_resource.service_name}"
+    end
     Chef::Log.info "Successfully installed the service #{new_resource.service_name}."
     new_resource.updated_by_last_action(true)
   end
@@ -69,7 +104,6 @@ action :update do
     @service_windows.update_service(windows_service_attributes)
     update_dependencies
     windows_service_attributes = update_service_recovery(windows_service_attributes)
-    Chef::Log.info "Windows Service Attributes - #{windows_service_attributes}"
     @service_windows.update_service(windows_service_attributes)
     new_resource.updated_by_last_action(true)
   else

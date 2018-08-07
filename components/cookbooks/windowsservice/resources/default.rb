@@ -16,5 +16,6 @@ attribute :dependencies, kind_of: Array, default: nil
 attribute :username, kind_of: String
 attribute :password, kind_of: String
 attribute :wait_for_status, kind_of: String
+attribute :service_type, equal_to: ['Traditional', 'Topshelf'], default: 'Traditional'
 
 attr_accessor :exists, :status
