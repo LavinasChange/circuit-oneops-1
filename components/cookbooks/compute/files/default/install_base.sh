@@ -70,20 +70,18 @@ install_ruby_ubuntu_14_04()
     echo "ERROR: The Path for Ubuntu 14.04 Binaries is Empty."
     exit 1
   fi
-  wget -q -O ruby-binary.tar.gz $ruby_binary_path_ubuntu_14_04
-  tar zxf ruby-binary.tar.gz --strip-components 1 -C /usr
-  rm -f ruby-binary.tar.gz
+  install_ruby_binary $ruby_binary_path_ubuntu_14_04
 }
 
 install_ruby_binary_if_not_installed()
 {
   if ! is_ruby_exists; then
-    install_ruby_binary
+    install_ruby_binary $ruby_binary_path
   else
     ver=`get_ruby_version`
     if [ "$ver" != "$ruby_binary_version" ] ; then
       yum remove -y ruby
-      install_ruby_binary
+      install_ruby_binary $ruby_binary_path
     fi
   fi
 }
@@ -106,9 +104,21 @@ get_ruby_version()
 
 install_ruby_binary()
 {
-    wget -q -O ruby-binary.tar.gz $ruby_binary_path
-    tar zxf ruby-binary.tar.gz --strip-components 1 -C /usr
-    rm -f ruby-binary.tar.gz
+  # Only take valid formats: tar.gz, rpm
+  if [[ $1 != *".tar.gz" ]] && [[ $1 != *".rpm" ]]; then
+    echo "ERROR: The ruby_binary_path contains a file of an unrecognized format."
+    exit 1
+  fi
+
+  wget -q -O ruby-binary $1
+  
+  if [[ $1 = *".tar.gz" ]]; then
+    tar zxf ruby-binary --strip-components 1 -C /usr
+  elif [[ $1 = *".rpm" ]]; then
+    rpm -i ruby-binary
+  fi
+
+  rm -f ruby-binary
 }
 
 set_gem_source()
@@ -143,152 +153,172 @@ downgrade_rubygems()
   fi
 }
 
-set_env $@
-
 set -e
 if ! [ -e /etc/ssh/ssh_host_dsa_key ] ; then
   echo "generating host ssh keys"
   /usr/bin/ssh-keygen -A
 fi
 
-# setup os release variables
-echo "Install ruby and bundle."
+if [ -e /etc/oneops-tools-inventory.yml ]
+then
+    echo "Fast-image detected"
 
-# sles or opensuse
-if [ -e /etc/SuSE-release ] ; then
-  zypper -n in sudo rsync file make gcc glibc-devel libgcc ruby ruby-devel rubygems libxml2-devel libxslt-devel perl
-  zypper -n in rubygem-yajl-ruby
+    set -e
 
-  # sles
-  hostname=`cat /etc/HOSTNAME`
-  grep $hostname /etc/hosts
-  if [ $? != 0 ]; then
-    ip_addr=`ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1 -d'/' | xargs`
-    echo "$ip_addr $hostname" >> /etc/hosts
-  fi
-
-# redhat / centos
-elif [ -e /etc/redhat-release ] ; then
-  release=$(cat /etc/redhat-release | grep -o '[0-9]\.[0-9]')
-  major=${release%.*}
-  install_base_centos
-  install_ruby_centos
-
-  # disable selinux
-  if [ -e /selinux/enforce ]; then
-    echo 0 >/selinux/enforce
-    echo "SELINUX=disabled" >/etc/selinux/config
-    echo "SELINUXTYPE=targeted" >>/etc/selinux/config
-  fi
-
-  # allow ssh sudo's w/out tty
-  grep -v requiretty /etc/sudoers > /etc/sudoers.t
-  mv -f /etc/sudoers.t /etc/sudoers
-  chmod 440 /etc/sudoers
-
+    # Setup path
+    if [ -e /home/oneops/ruby/2.0.0-p648/bin ]; then
+        echo "export PATH=/home/oneops/ruby/2.0.0-p648/bin:$PATH" >> /home/oneops/.bash_profile
+        echo "export GEM_HOME=/home/oneops/ruby/2.0.0-p648/lib/ruby/gems/2.0.0" >> /home/oneops/.bash_profile
+        echo "export GEM_PATH=/home/oneops/ruby/2.0.0-p648/lib/ruby/gems/2.0.0" >> /home/oneops/.bash_profile
+    fi
 else
-# debian
-  export DEBIAN_FRONTEND=noninteractive
-  echo "apt-get update ..."
-  apt-get update >/dev/null 2>&1
-  if [ $? != 0 ]; then
-    echo "apt-get update returned non-zero result code. Usually means some repo is returning a 403 Forbidden. Try deleting the compute from providers console and retrying."
-    exit 1
-  fi
 
-  apt-get install -q -y build-essential make libxml2-dev libxslt-dev libz-dev nagios3
+    echo "No fast-image detected"
 
-  if [[ $(lsb_release -r -s) = *14.04* ]]; then
-    install_ruby_ubuntu_14_04
-  else
-    apt-get -q -y install ruby ruby-dev
-  fi
+    set_env $@
 
-  set +e
+    set -e
 
-  if [[ $(lsb_release -r -s) = *16.04* ]]; then
-    apt-get -y -q install rubygems-integration
-  fi
+    # setup os release variables
+    echo "Install ruby and bundle."
 
-  rm -fr /etc/apache2/conf.d/nagios3.conf
-  set -e
-fi
+    # sles or opensuse
+    if [ -e /etc/SuSE-release ] ; then
+      zypper -n in sudo rsync file make gcc glibc-devel libgcc ruby ruby-devel rubygems libxml2-devel libxslt-devel perl
+      zypper -n in rubygem-yajl-ruby
 
-me=`logname`
+      # sles
+      hostname=`cat /etc/HOSTNAME`
+      grep $hostname /etc/hosts
+      if [ $? != 0 ]; then
+        ip_addr=`ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1 -d'/' | xargs`
+        echo "$ip_addr $hostname" >> /etc/hosts
+      fi
 
-set +e
+    # redhat / centos
+    elif [ -e /etc/redhat-release ] ; then
+      release=$(cat /etc/redhat-release | grep -o '[0-9]\.[0-9]')
+      major=${release%.*}
+      install_base_centos
+      install_ruby_centos
 
-#set gem source from compute env variable
-if [ -n "$rubygems_proxy" ]; then
-  set_gem_source
-else
-  rubygems_proxy="https://rubygems.org"
-fi
-mkdir -p -m 755 /opt/oneops
-echo "$rubygems_proxy" > /opt/oneops/rubygems_proxy
+      # disable selinux
+      if [ -e /selinux/enforce ]; then
+        echo 0 >/selinux/enforce
+        echo "SELINUX=disabled" >/etc/selinux/config
+        echo "SELINUXTYPE=targeted" >>/etc/selinux/config
+      fi
 
-if [ -e /etc/redhat-release ] ; then
-  downgrade_rubygems
-fi
+      # allow ssh sudo's w/out tty
+      grep -v requiretty /etc/sudoers > /etc/sudoers.t
+      mv -f /etc/sudoers.t /etc/sudoers
+      chmod 440 /etc/sudoers
 
-gem_version="1.7.7"
-grep 16.04 /etc/issue
-if [ $? -eq 0 ]; then
-  gem_version="2.0.2"
-fi
+    else
+      # debian
+      export DEBIAN_FRONTEND=noninteractive
+      echo "apt-get update ..."
+      apt-get update >/dev/null 2>&1
+      if [ $? != 0 ]; then
+        echo "apt-get update returned non-zero result code. Usually means some repo is returning a 403 Forbidden. Try deleting the compute from providers console and retrying."
+        exit 1
+      fi
 
-gem install json --version $gem_version --no-ri --no-rdoc --quiet
-if [ $? -ne 0 ]; then
-  echo "could not install json gem, version $gem_version"
-fi
+      apt-get install -q -y build-essential make libxml2-dev libxslt-dev libz-dev nagios3
 
-#set -e
-bundler_installed=$(gem list ^bundler$ -i)
-if [ $bundler_installed != "true" ]; then
-  echo "Installing bundler..."
-  ver=$((echo "1.8.25" && gem -v) | sort -V | head -n 1)
-  if [ $ver != '1.8.25' ]; then
-    gem install bundler -v 1.15.4 --bindir /usr/bin --no-ri --no-rdoc --quiet
-  else
-    gem install bundler --bindir /usr/bin --no-ri --no-rdoc --quiet
-  fi
-fi
+      if [[ $(lsb_release -r -s) = *14.04* ]]; then
+        install_ruby_ubuntu_14_04
+      else
+        apt-get -q -y install ruby ruby-dev
+      fi
 
-#set +e
-perl -p -i -e 's/ 00:00:00.000000000Z//' /var/lib/gems/*/specifications/*.gemspec 2>/dev/null
+      set +e
 
-# oneops user
-grep "^oneops:" /etc/passwd 2>/dev/null
-if [ $? != 0 ] ; then
-  set -e
-  echo "*** ADD oneops USER ***"
+      if [[ $(lsb_release -r -s) = *16.04* ]]; then
+        apt-get -y -q install rubygems-integration
+      fi
 
-  # create oneops user & group - deb systems use addgroup
-  if [ -e /etc/lsb-release] ] ; then
-    addgroup oneops
-  else
-    groupadd oneops
-  fi
+      rm -fr /etc/apache2/conf.d/nagios3.conf
+      set -e
+    fi
 
-  useradd oneops -g oneops -m -s /bin/bash
-  echo "oneops   ALL = (ALL) NOPASSWD: ALL" >> /etc/sudoers
-else
-  echo "oneops user already there..."
+    set +e
+
+    #set gem source from compute env variable
+    if [ -n "$rubygems_proxy" ]; then
+      set_gem_source
+    else
+      rubygems_proxy="https://rubygems.org"
+    fi
+    mkdir -p -m 755 /opt/oneops
+    echo "$rubygems_proxy" > /opt/oneops/rubygems_proxy
+
+    if [ -e /etc/redhat-release ] ; then
+      downgrade_rubygems
+    fi
+
+    gem_version="1.7.7"
+    grep 16.04 /etc/issue
+    if [ $? -eq 0 ]; then
+      gem_version="2.0.2"
+    fi
+
+    gem install json --version $gem_version --no-ri --no-rdoc --quiet
+    if [ $? -ne 0 ]; then
+      echo "could not install json gem, version $gem_version"
+    fi
+
+    #set -e
+    bundler_installed=$(gem list ^bundler$ -i)
+    if [ $bundler_installed != "true" ]; then
+      echo "Installing bundler..."
+      ver=$((echo "1.8.25" && gem -v) | sort -V | head -n 1)
+      if [ $ver != '1.8.25' ]; then
+        gem install bundler -v 1.15.4 --bindir /usr/bin --no-ri --no-rdoc --quiet
+      else
+        gem install bundler --bindir /usr/bin --no-ri --no-rdoc --quiet
+      fi
+    fi
+
+    #set +e
+    perl -p -i -e 's/ 00:00:00.000000000Z//' /var/lib/gems/*/specifications/*.gemspec 2>/dev/null
+
+    # oneops user
+    grep "^oneops:" /etc/passwd 2>/dev/null
+    if [ $? != 0 ] ; then
+      set -e
+      echo "*** ADD oneops USER ***"
+
+      # create oneops user & group - deb systems use addgroup
+      if [ -e /etc/lsb-release ] ; then
+        addgroup oneops
+      else
+        groupadd oneops
+      fi
+
+      useradd oneops -g oneops -m -s /bin/bash
+      echo "oneops   ALL = (ALL) NOPASSWD: ALL" >> /etc/sudoers
+    else
+      echo "oneops user already there..."
+    fi
+
+    set -e
+
+    # Configure gem sources for oneops user
+    \cp ~/.gemrc /home/oneops/
+
+    mkdir -p -m 750 /etc/nagios/conf.d
+    mkdir -p -m 755 /opt/oneops/workorder
+    mkdir -p -m 750 /var/log/nagios
 fi
 
 set -e
-
+me=`logname`
 # ssh and components move
 if [ "$me" == "oneops" ] ; then
   exit
-fi
-
-echo "copying files from provider-setup user $me to oneops..."
-
-home_dir="/home/$me"
-if [ "$me" == "root" ] ; then
+elif [ "$me" == "root" ] ; then
   cd /root
-  home_dir="/root"
 else
   cd /home/$me
 fi
@@ -298,16 +328,12 @@ if [ -e /etc/SuSE-release ] ; then
   me_group="users"
 fi
 
-# Configure gem sources for oneops user
-\cp ~/.gemrc /home/oneops/
-
 # gets rid of the 'only use ec2-user' ssh response
 sed -e 's/.* ssh-rsa/ssh-rsa/' .ssh/authorized_keys > .ssh/authorized_keys_
 mv .ssh/authorized_keys_ .ssh/authorized_keys
 chown $me:$me_group .ssh/authorized_keys
 chmod 600 .ssh/authorized_keys
 
-# ibm rhel
 if [ "$me" != "root" ] ; then
   `rsync -a /home/$me/.ssh /home/oneops/`
 else
@@ -320,10 +346,6 @@ if [ "$me" == "idcuser" ] ; then
   # need to set a password for the rhel 6.3
   openssl rand -base64 12 | passwd oneops --stdin
 fi
-
-mkdir -p -m 750 /etc/nagios/conf.d
-mkdir -p -m 755 /opt/oneops/workorder
-mkdir -p -m 750 /var/log/nagios
 
 # On touch update; chown will break nagios if monitor cookbook does not run.
 # Still need to chown a few directories
