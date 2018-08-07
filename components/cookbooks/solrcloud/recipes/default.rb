@@ -126,6 +126,7 @@ if node['solr_version'].start_with? "7."
   node.set['config_url'] = node['solr_custom_params']['config_url_v7']
 end
 
+node.set["custom_metric_yaml"] = ci['custom_metric_yaml']
 node.set["installation_dir_path"] = ci['installation_dir_path']
 node.set["data_dir_path"] = ci['data_dir_path']+"#{node['solrmajorversion']}"
 node.set["enable_cinder"] = ci['enable_cinder']

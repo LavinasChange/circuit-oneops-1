@@ -294,6 +294,17 @@ attribute 'solr_monitor_version',
               :order => 34
           }
 
+#Custom metrics handlers
+attribute 'custom_metric_yaml',
+          :description => "YAML for custom solr-metrics",
+          :default =>'',
+          :data_type => "text",
+          :format => {
+              :help => 'Specify custom solr-handlers JMX mbeans for reporting to telegraf. Default ones are always shown regardless of the mbeans here',
+              :category => '2.SolrCloud Monitoring',
+              :order => 35
+          }
+
 # Attribute visible only in the Operations phase because of grouping-type bom
 # Value for the attribute is assigned by us in the recipes
 # This attribute helps to see the IP address in the Operations phase.
