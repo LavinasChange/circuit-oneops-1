@@ -40,6 +40,7 @@ windowsservice windows_service.service_name do
   reset_fail_counter  reset_fail_counter
   restart_service_after restart_service_after
   command windows_service.command
+  service_type windows_service.service_type
 end
 
 include_recipe 'windowsservice::restart_service'

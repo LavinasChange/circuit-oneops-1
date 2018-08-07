@@ -124,6 +124,21 @@ attribute 'wait_for_status',
     :order     => 8,
   }
 
+attribute 'service_type',
+  :description => "Service type",
+  :default     => 'Traditional',
+  :format      => {
+    :help      =>  'Windows service type',
+    :category  =>  '2.General',
+    :order     => 9,
+    :form      => {'field' => 'select',
+                    'options_for_select' => [
+                       ['Traditional','Traditional'],
+                       ['Topshelf','Topshelf']
+                      ]
+                    }
+  }
+
 attribute 'user_account',
   :description => 'User Account',
   :required    => 'required',
