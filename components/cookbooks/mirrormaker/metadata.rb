@@ -12,7 +12,7 @@ grouping 'default',
 attribute 'version',
   :description          => 'Version of Mirrormaker',
   :required => "required",
-  :default               => '1.1.1',
+  :default               => '0.10.1.0',
   :format => {
     :category => '1.Global',
     :help => 'Version of the mirrormaker',
