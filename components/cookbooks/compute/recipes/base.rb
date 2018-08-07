@@ -124,7 +124,6 @@ ruby_block 'install base' do
 
     # Determine install_base file
     base_file = "install_base.#{os_type =~ /windows/ ? 'ps1' : 'sh'}"
-    base_file = "install_fastimage_base.sh" if fast_image
     dest_dir  = os_type =~ /windows/ ? '' : '~/'
 
     # Determine command arguments
