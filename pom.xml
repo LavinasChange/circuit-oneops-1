@@ -3,7 +3,7 @@
 
   <groupId>com.oneops</groupId>
   <artifactId>circuit-oneops-1</artifactId>
-  <version>18.06.28-70</version>
+  <version>18.06.28-71-SNAPSHOT</version>
 
   <name>Circuit OneOps</name>
   <description>Circuit OneOps-1 project</description>
@@ -53,7 +53,7 @@
     <developerConnection>scm:git:https://gecgithub01.walmart.com/walmartlabs/circuit-oneops-1.git
     </developerConnection>
     <url>https://gecgithub01.walmart.com/walmartlabs/circuit-oneops-1</url>
-    <tag>circuit-oneops-1-18.06.28-70</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <build>
