@@ -385,8 +385,12 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
   end
 
   #Check if there are any custom handlers requested by client
-  include_recipe 'solrcloud::custom_metrics'
-
+  unless node["custom_metric_yaml"].nil?
+    unless node["custom_metric_yaml"].strip.empty?
+      include_recipe 'solrcloud::custom_metrics'
+    end
+  end
+  
   template "/opt/solr/solrmonitor/metrics-tool.rb" do
     source "metrics-tool.erb"
     owner 'app'
