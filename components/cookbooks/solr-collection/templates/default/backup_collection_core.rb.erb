@@ -34,11 +34,13 @@ def get_shard_leader_ip_to_name_map(host,port,collection_name,logger)
 
   node_ip_to_replica_name_map = Hash.new()
   shards.keys.each do |shard_name|
-    leaders = shards[shard_name]['replicas'].values.select { |replica| replica['leader'] == 'true'}
-    core_name = leaders[0]['core']
-    node_name = leaders[0]['node_name']
-    node_ip = node_name.split(':')[0]
-    node_ip_to_replica_name_map[node_ip] = core_name
+    replicas = shards[shard_name]['replicas'].values
+    replicas.each do |replica|
+      core_name = replica['core']
+      node_name = replica['node_name']
+      node_ip = node_name.split(':')[0]
+      node_ip_to_replica_name_map[node_ip] = core_name
+    end
   end 
   return node_ip_to_replica_name_map
 end
@@ -156,7 +158,7 @@ begin
     destination = "#{location}/#{config_name}_#{tims_s}"
     upload_or_download_zk_config('downconfig', solr_lib_path, zkHost, config_name, destination, logger)
   else
-    logger.debug("#{solr_host} is not a core leader for collection #{collection_name} and hence no backup will be taken on this node for collection #{collection_name}")
+    logger.debug("#{solr_host} is not a part of this collection #{collection_name} and hence no backup will be taken on this node for collection #{collection_name}")
   end
 
   #Delete old backups 
