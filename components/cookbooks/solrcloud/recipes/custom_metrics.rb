@@ -27,8 +27,6 @@ ruby_block 'adding custom yaml metrics' do
     trimmed_custom_yaml = Hash.new
     trimmed_hash = Hash.new
     custom_metric_yaml.each do |k,v|
-      # If v is nil, an array is being iterated and the value is k.
-      # If v is not nil, a hash is being iterated and the value is v.
       value = v
       if value.is_a?(Hash)
         value.each do |k,v|
