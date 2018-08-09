@@ -22,7 +22,7 @@ resource "lb",
          "returnRelation": false,
          "relationName": "base.RealizedAs",
          "direction": "to",
-         "targetClassName": "manifest.Lb",
+         "targetClassName": "manifest.oneops.1.Lb",
          "relations": [
            { "returnObject": false,
              "returnRelation": false,

@@ -34,7 +34,9 @@ class LbSpecUtils
     end
 
     cloud_dns_id = cloud_service['ciAttributes']['cloud_dns_id']
-
+    org_name = nil
+    asmb_name = nil
+    env_name = nil
     if @node['workorder'].has_key?('actionName') && @node['workorder']['actionName'] == "status"
       ciAttributes = @node['workorder']['payLoad']['DependsOn']
       ciAttributes.each do |attribute|
@@ -280,6 +282,15 @@ class LbSpecUtils
     end
 
     @node.set['lb_members'] = computes
+
+    cert_name = [env_name, asmb_name, platform_name, ci['ciId'].to_s].join("-")
+
+    # truncate for netscaler max cert name length of 31
+    if cert_name.length > 31
+      cert_name = "oo-"+ci['ciId'].to_s
+    end
+
+    @node.set["cert_name"] = cert_name
   end
 
 
