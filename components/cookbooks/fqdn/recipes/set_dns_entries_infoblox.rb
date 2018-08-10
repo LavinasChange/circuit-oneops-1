@@ -188,17 +188,18 @@ node[:entries].each do |entry|
     
     # cleanup or delete
     existing_dns.each do |existing_entry|
-      if deletable_values.include?(existing_entry) &&
-         (dns_values.include?(existing_entry) && node[:dns_action] == "delete") ||          
-         # value was in previous entry, but not anymore
-         (!dns_values.include?(existing_entry) &&
-          node.previous_entries.has_key?(dns_name) &&
-          node.previous_entries[dns_name].include?(existing_entry) && 
-          node[:dns_action] != "delete") ||
-         # hijackable cname - remove unknown value
-         (entry.has_key?(:is_hijackable) && is_hijackable(dns_name,ns) && !dns_values.include?(existing_entry))
+      value = node.deletable_entries.detect{ |d| d[:name] == dns_name }
+      if !value.nil? && value[:values].include?(existing_entry) && (
+      (dns_values.include?(existing_entry) && node[:dns_action] == "delete") ||
+          # value was in previous entry, but not anymore
+          (!dns_values.include?(existing_entry) &&
+              node.previous_entries.has_key?(dns_name) &&
+              node.previous_entries[dns_name].include?(existing_entry) &&
+              node[:dns_action] != "delete")) ||
+          # hijackable cname - remove unknown value
+          (entry.has_key?(:is_hijackable) && is_hijackable(dns_name,ns) && !dns_values.include?(existing_entry))
 
-         delete_record(dns_name, existing_entry)
+        delete_record(dns_name, existing_entry)
       end
 
       # First check to make sure we have dc_entry attribute

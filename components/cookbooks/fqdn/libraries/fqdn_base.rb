@@ -102,6 +102,9 @@ def is_wildcard_enabled(node)
   return false
 end
 
+
+
+
 module Fqdn
 
   module Base
@@ -304,6 +307,51 @@ module Fqdn
         fail_with_fault result
       end
       
+    end
+
+    def is_last_active_cloud_in_dc
+      cloud_name = node[:workorder][:cloud][:ciName]
+      # skip deletes if other active clouds for same dc
+      if node[:workorder][:services].has_key?("gdns")
+        cloud_service =  node[:workorder][:services][:gdns][cloud_name]
+      end
+      if node.workorder.box.ciAttributes.has_key?("is_platform_enabled") &&
+          node.workorder.box.ciAttributes.is_platform_enabled == 'true' &&
+          node.workorder.payLoad.has_key?("activeclouds") && !cloud_service.nil?
+        node.workorder.payLoad["activeclouds"].each do |service|
+
+          if service[:ciAttributes].has_key?("gslb_site_dns_id") &&
+              service[:nsPath] != cloud_service[:nsPath] &&
+              service[:ciAttributes][:gslb_site_dns_id] == cloud_service[:ciAttributes][:gslb_site_dns_id]
+
+            Chef::Log.info("not last active cloud in DC. #{service[:nsPath].split("/").last}")
+            return false
+          end
+        end
+        return true
+      end
+      return true
+    end
+
+    def is_last_active_cloud
+      cloud_name = node[:workorder][:cloud][:ciName]
+      # skip deletes if other active clouds for same dc
+      if node[:workorder][:services].has_key?("gdns")
+        cloud_service =  node[:workorder][:services][:gdns][cloud_name]
+      end
+      if node.workorder.box.ciAttributes.has_key?("is_platform_enabled") &&
+          node.workorder.box.ciAttributes.is_platform_enabled == 'true' &&
+          node.workorder.payLoad.has_key?("activeclouds") && !cloud_service.nil?
+        node.workorder.payLoad["activeclouds"].each do |service|
+
+          if service[:nsPath] != cloud_service[:nsPath]
+            Chef::Log.info("not last active cloud: #{service[:nsPath].split("/").last}")
+            return false
+          end
+        end
+        return true
+      end
+      return true
     end
 
   end

@@ -87,6 +87,8 @@ if env.has_key?("global_dns") && env["global_dns"] == "true" && depends_on_lb &&
   end
 end
 
+node.set["is_last_active_cloud_in_dc"] = is_last_active_cloud_in_dc
+
 node.set['dns_action'] = 'create'
 #build the entry list
 include_recipe 'fqdn::build_entries_list'

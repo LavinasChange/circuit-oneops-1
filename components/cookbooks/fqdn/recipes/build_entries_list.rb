@@ -177,7 +177,6 @@ if node.workorder.rfcCi.ciAttributes.has_key?("ptr_enabled") &&
   end
 end
 
-
  # platform level
 if node.workorder.cloud.ciAttributes.priority != "1"
 
@@ -270,6 +269,7 @@ entries.each do |entry|
   key = entry[:name]
   entries_hash[key] = entry[:values]
 end
+
 puts "***RESULT:entries=#{JSON.dump(entries_hash)}"
 
 # pass to set_dns_entries
@@ -288,4 +288,11 @@ node.set[:previous_entries] = previous_entries
 previous_entries.each do |k,v|
   deletable_entries.push({:name => k, :values => v})
 end
+
+if node.workorder.payLoad.has_key?("lb") && !node.is_last_active_cloud_in_dc && !node.has_key?("gslb_domain") &&
+    (node.dns_action == "delete" || node.workorder.cloud.ciAttributes.priority == "2")
+  deletable_entries.delete_if{|i|i[:name]==primary_platform_dns_name}
+end
+
 node.set[:deletable_entries] = deletable_entries
+
