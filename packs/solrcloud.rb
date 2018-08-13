@@ -119,7 +119,7 @@ resource 'volume-app',
 resource "os",
    :cookbook => "oneops.1.os",
    :attributes => {
-      'limits' => '{ "nofile" : "200000", "nproc"  : "32768", "memlock" : "unlimited", "as" : "unlimited" }',
+      'limits' => '{ "nofile" : "200000", "nproc"  : "65536", "memlock" : "unlimited", "as" : "unlimited" }',
       'sysctl' => '{"vm.max_map_count":"131072", "net.ipv4.tcp_mem":"1529280 2039040 3058560", "net.ipv4.udp_mem":"1529280 2039040 3058560", "fs.file-max":"1611021"}'
   }
 
