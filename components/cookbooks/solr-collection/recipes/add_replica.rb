@@ -1,57 +1,39 @@
-extend SolrCollection::Util
-extend SolrCloud::Util
-require "#{File.dirname(__FILE__)}/replica_distributor"
+require "/opt/solr-recipes/replica-distributor/solr_apis.rb"
 require 'json'
 
-# For the given shard, add a replica to the given IP
-def add_replica (collection_name, shard_num, ip, port_num)
-    shard_name = "shard"+"#{shard_num}"
-    node_name = "#{ip}:#{port_num}_solr"
-    Chef::Log.info("Adding replica for #{shard_name} to #{node_name}")
-    params = {
-        :action => "ADDREPLICA",
-        :collection => collection_name,
-        :shard => shard_name,
-        :node => node_name
-    }
-    response = collection_api(ip, port_num.to_s, params)
-    Chef::Log.info("#{response.to_json}")
-    return true
-end
+include_recipe 'solr-collection::default'
 
-# Wire SolrCollection Util to chef resources.
-Chef::Resource::RubyBlock.send(:include, SolrCollection::Util)
-
+Chef::Log.info("Including the replica distibutor from external source")
 Chef::Log.info("*** Placing replicas for #{node['collection_name']} ***")
+
+cloud_provider = CloudProvider.new(node)
+clouds_payload = cloud_provider.get_clouds_payload(node)
+computes_payload = CloudProvider.get_computes_payload(node)
 
 collections_for_node_sharing = JSON.parse(node['collections_for_node_sharing'])
 collections_for_node_sharing.collect! {|collection_name| collection_name.strip }
 collections_for_node_sharing = collections_for_node_sharing.reject {|coll| coll == node['collection_name'] || coll == 'NO_OP_BY_DEFAULT'}
-ipaddress = node['ipaddress']
-port_num = node['port_num'].to_i
 
-existing_cluster_collections = get_collections(ipaddress, port_num.to_s)
-# Get cloud provider name (ex: Azure or Openstack)
-cloud_provider_name = CloudProvider.get_cloud_provider_name(node)
-computes = CloudProvider.get_computes_payload(node)
+collection_specs = []
 
-cloud_provider = CloudProvider.new(node)
-
-replicaDistributor = ReplicaDistributor.new
-Chef::Log.info("existing_cluster_collections = #{existing_cluster_collections.to_json}")
-shard_num_to_iplist_map = replicaDistributor.get_shard_number_to_core_ips_map(node['num_shards'].to_i, node['replication_factor'].to_i, computes, cloud_provider_name, collections_for_node_sharing, existing_cluster_collections)
-
-Chef::Log.info("shard_num_to_iplist_map = #{shard_num_to_iplist_map.to_json}")
-shard_num_to_iplist_map.each do |shard_num, ip_list|
-  ip_list.each do |ip|
-    add_replica(node['collection_name'], shard_num, ip, port_num.to_s)
-  end
-end
-
-params = {
-  :action => "CLUSTERSTATUS"
+collection = {
+    "coll_name" => node['collection_name'],
+    "num_shards" => node['num_shards'].to_i,
+    "num_replicas" => node['replication_factor'].to_i,
+    "collections_for_node_sharing" => collections_for_node_sharing
 }
-clusterstatus_resp_obj = solr_collection_api("localhost", node['port_num'].to_s, params)
-compute_ip_to_cloud_domain_map = replicaDistributor.get_compute_ip_to_cloud_id_map(computes, cloud_provider_name)
-cloud_provider.show_summary(compute_ip_to_cloud_domain_map, clusterstatus_resp_obj)
 
+collection_specs.push(collection)
+
+port_no = node['port_num'].to_i
+
+complete_payload = {
+    "clouds_payload" => clouds_payload,
+    "computes_payload" => computes_payload,
+    "collection_specs" => collection_specs,
+    "port_no" => port_no
+}
+
+Chef::Log.info("the replica distibutor pyaload -- #{complete_payload}")
+
+solr_replica_distributor(complete_payload)
