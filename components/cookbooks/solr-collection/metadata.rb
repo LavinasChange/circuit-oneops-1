@@ -549,6 +549,18 @@ attribute 'estimate_full_ingestion_minutes',
     :order => 55
   }
 
+# Please refer to this https://lucene.apache.org/solr/guide/7_2/metrics-reporting.html#metrics-reporting for merge metrics reporting
+attribute 'merge_metrics',
+  :description => 'Merge Metrics to be displayed in Medusa Collection Dashboards',
+  :default => "false",
+  :format => {
+    :category => '10.Metrics for Medusa',
+    :help => "Set this to true to see the merge related metrics in Medusa Collection Dashboards.
+              Please note that in the event it is selected to be true, it can't be reverted",
+    :form => {'field' => 'checkbox'},
+    :order => 56
+  }
+
 
 ######################################
 ## Actions in the Operations Phase  ##

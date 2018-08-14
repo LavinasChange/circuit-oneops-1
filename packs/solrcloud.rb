@@ -573,7 +573,8 @@ resource "solr-collection",
      'backup_enabled' => false,
      'backup_cron' => '0 0 * * *',
      'backup_location' => '/app/solr_backup',
-     'backup_number_to_keep' => '2'
+     'backup_number_to_keep' => '2',
+     'merge_metrics' => 'false'
   },
 
   :payloads => {

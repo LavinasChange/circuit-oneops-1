@@ -47,6 +47,9 @@ Chef::Log.info("solr_custom_params = #{node['solr_custom_params'].to_json}")
 
 node.set['action_name'] = actionName
 
+#getting the checkbox value for the metrics-metrics to be set
+node.set['merge_metrics'] = ci['merge_metrics']
+
 node.set['collection_name'] = ci['collection_name']
 node.set['num_shards'] = ci['num_shards']
 node.set['replication_factor'] = ci['replication_factor']
