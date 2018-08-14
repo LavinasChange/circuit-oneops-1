@@ -58,11 +58,6 @@ class CloudProvider
     return false
   end
 
-  # get <fault_domain>_<update_domain> from compute
-  def get_zone_info(compute)
-    zone  = JSON.parse(compute['ciAttributes']['zone'])
-    return "#{zone['fault_domain']}_#{zone['update_domain']}"
-  end
 
   # get compute payload from workorder
   def self.get_computes_payload(node)
