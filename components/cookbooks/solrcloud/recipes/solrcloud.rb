@@ -383,13 +383,6 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
     mode '0755'
     action :create
   end
-
-  #Check if there are any custom handlers requested by client
-  unless node["custom_metric_yaml"].nil?
-    unless node["custom_metric_yaml"].strip.empty?
-      include_recipe 'solrcloud::custom_metrics'
-    end
-  end
   
   template "/opt/solr/solrmonitor/metrics-tool.rb" do
     source "metrics-tool.erb"
@@ -418,7 +411,8 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
                   :oo_cloud => node['oo_cloud'],
                   :node_ip => node['ipaddress'],
                   :oo_environment_name => oo_environment_name,
-                  :solr_log_path => node["data_dir_path"]
+                  :solr_log_path => node["data_dir_path"],
+                  :custom_metric_yaml => node["custom_metric_yaml"]
               })
   end
 
