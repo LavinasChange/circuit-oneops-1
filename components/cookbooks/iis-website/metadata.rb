@@ -16,7 +16,10 @@ found_folders.each do |folder|
         Dir.glob("#{File.dirname(__FILE__)}/../../../../#{folder}/**/{*,.*}").each do |found_file|
             cookbook_name = found_file.split('/').last
             if File.directory?(found_file) && cookbook_name.include?("cert_service")
-                depends cookbook_name
+        		  require 'FileUtils'
+        			dest_path = File.dirname(__FILE__) + '/../'
+        			FileUtils.cp_r(found_file, dest_path)
+              depends cookbook_name
             end
         end
     end
