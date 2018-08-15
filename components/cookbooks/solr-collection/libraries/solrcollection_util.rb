@@ -1317,18 +1317,21 @@ module SolrCollection
     return node_ip_to_core_name_map
   end
 
-  # This method return the map of leader ip & replica_name
+  # This method return the map of replica ip & replica_name
   # ex. {"private_ip1":"sams_list1_shard1_replica0","private_ip2":"sams_list1_shard2_replica0"}
-  def get_shard_leader_ip_to_name_map(host, port, collection_name, shard_name)
+  def get_shard_replica_ip_to_name_map(host, port, collection_name, shard_name)
     shards = get_shards_by_collection(host,port,collection_name)
     Chef::Log.info("shards : #{shards.to_json}")
-    leaders = shards[shard_name]['replicas'].values.select { |replica| replica['leader'] == 'true'}
+    replicas = shards[shard_name]['replicas'].values
     node_ip_to_replica_name_map = Hash.new()
-    leaders.each do |leader|
-      core_name = leader['core']
-      node_name = leader['node_name']
-      node_ip = node_name.split(':')[0]
-      node_ip_to_replica_name_map[node_ip] = core_name
+    replicas.each do |replica|
+      replica_state = replica['state']
+      if replica_state == "active"
+        core_name = replica['core']
+        node_name = replica['node_name']
+        node_ip = node_name.split(':')[0]
+        node_ip_to_replica_name_map[node_ip] = core_name
+      end
     end
     return node_ip_to_replica_name_map
   end
