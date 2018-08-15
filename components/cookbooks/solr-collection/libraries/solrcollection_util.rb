@@ -1325,13 +1325,10 @@ module SolrCollection
     replicas = shards[shard_name]['replicas'].values
     node_ip_to_replica_name_map = Hash.new()
     replicas.each do |replica|
-      replica_state = replica['state']
-      if replica_state == "active"
-        core_name = replica['core']
-        node_name = replica['node_name']
-        node_ip = node_name.split(':')[0]
-        node_ip_to_replica_name_map[node_ip] = core_name
-      end
+      core_name = replica['core']
+      node_name = replica['node_name']
+      node_ip = node_name.split(':')[0]
+      node_ip_to_replica_name_map[node_ip] = core_name
     end
     return node_ip_to_replica_name_map
   end
