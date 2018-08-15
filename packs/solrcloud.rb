@@ -679,19 +679,6 @@ resource "solr-collection",
       :thresholds => {
         'pctgShardsWithMinActiveReplicas' => threshold('1m','avg','pctgShardsWithMinActiveReplicas',trigger('<',100,5,4),reset('=',100,2,1))
       }
-    },
-    'ReplicaDistributionStatus' =>  {
-      :description => 'ReplicaDistributionStatus',
-      :source => '',
-      :chart => {'min'=>0, 'unit'=>''},
-      :cmd => 'replica_distribution_validation.rb!:::node.workorder.rfcCi.ciAttributes.collection_name:::!:::node.workorder.rfcCi.ciAttributes.replication_factor:::',
-      :cmd_line => '/opt/nagios/libexec/replica_distribution_validation.rb $ARG1$ $ARG2$',
-      :metrics =>  {
-        'replicaCountToMove' => metric( :unit => '%', :description => 'No. of Replicas To Move', :dstype => 'GAUGE')
-      },
-      :thresholds => {
-        'replicaCountToMove' => threshold('5m','avg','replicaCountToMove',trigger('>',0,15,2),reset('<=',0,15,1))
-      }
     }
   }
 
