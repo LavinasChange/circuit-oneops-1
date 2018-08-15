@@ -148,6 +148,7 @@ deletable_values.uniq!
 # delete if 'a' record exist for primary_platform_dns_name pointing to LB ips
 if node.has_key?("gslb_domain") && !node.gslb_domain.nil?
   node.workorder.payLoad[:lb].each do |comp|
+    next if comp["ciAttributes"]["dns_record"].nil?
     delete_record(node.primary_platform_dns_name,comp["ciAttributes"]["dns_record"])
   end
 end
