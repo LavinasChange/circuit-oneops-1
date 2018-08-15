@@ -38,7 +38,7 @@ Chef::Log.info("user home directory : #{user_dir}")
 
 # Execute solr core backup script /app/solr6/plugins/backup_collection_core.rb
 # This script will backup the core if this node is leader and store backup in '/app_solr_backup'
-cmd = "ruby #{solr_pack_dir}/backup_collection_core.rb #{collection_name} #{backup_location} #{backup_logfile}"
+cmd = "ruby #{solr_pack_dir}/backup_collection_core.rb #{collection_name} #{node['config_name']} #{backup_location} #{backup_logfile}"
 Chef::Log.info("command = #{cmd}")
 execute "backup_core" do
     command cmd

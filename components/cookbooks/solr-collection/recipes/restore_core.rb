@@ -84,8 +84,22 @@ else
     backup_config = backup_configs[0]
     # compare latest downloaded solrconfig.xml with backup. If upload_backup_config = true meaning, ignore any diff. as config will be restored from backup
     xml_diff("#{backup_location}/#{backup_config}/solrconfig.xml", "#{backup_location}/#{current_zk_config_name}/solrconfig.xml", !upload_backup_config)
-    # compare latest downloaded managed-schema with backup. If upload_backup_config = true meaning, ignore any diff. as config will be restored from backup
-    xml_diff("#{backup_location}/#{backup_config}/managed-schema", "#{backup_location}/#{current_zk_config_name}/managed-schema", !upload_backup_config)
+    # compare latest downloaded managed-schema/schema.xml with backup. If upload_backup_config = true meaning, ignore any diff. as config will be restored from backup
+    if File.file?("#{backup_location}/#{backup_config}/managed-schema")
+      if File.file?("#{backup_location}/#{current_zk_config_name}/managed-schema")
+        xml_diff("#{backup_location}/#{backup_config}/managed-schema", "#{backup_location}/#{current_zk_config_name}/managed-schema", !upload_backup_config)
+      else
+        Chef::Log.error("managed-schema configuration file is missing current zookeeper configuration. Cannot compare with backup configuration.")
+      end
+    else
+      if File.file?("#{backup_location}/#{backup_config}/schema.xml")
+        if File.file?("#{backup_location}/#{current_zk_config_name}/schema.xml")
+          xml_diff("#{backup_location}/#{backup_config}/schema.xml", "#{backup_location}/#{current_zk_config_name}/schema.xml", !upload_backup_config)
+        else
+          Chef::Log.error("schema.xml configuration file is missing current zookeeper configuration. Cannot compare with backup configuration.")
+        end
+      end
+    end
     # restore/upload the config from backup
     if upload_backup_config == true
       uploadCustomConfig(solr_version, zk_host_fqdns, config_name, "#{backup_location}/#{backup_config}") 
