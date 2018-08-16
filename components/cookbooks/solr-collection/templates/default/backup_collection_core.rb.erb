@@ -10,7 +10,7 @@ require 'fileutils'
 
 # This method return the map of leader ip & core_name
 # ex. {"ip1":"collection1_shard1_replica0","ip2":"collection1_shard2_replica0"}
-def get_shard_leader_ip_to_name_map(host,port,collection_name,logger)
+def get_shard_replica_ip_to_name_map(host,port,collection_name,logger)
   uri = URI("http://#{host}:#{port}/solr/admin/collections?action=CLUSTERSTATUS&indexInfo=false&wt=json")
   res = Net::HTTP.get_response(uri)
   if !res.is_a?(Net::HTTPSuccess)
@@ -34,11 +34,16 @@ def get_shard_leader_ip_to_name_map(host,port,collection_name,logger)
 
   node_ip_to_replica_name_map = Hash.new()
   shards.keys.each do |shard_name|
-    leaders = shards[shard_name]['replicas'].values.select { |replica| replica['leader'] == 'true'}
-    core_name = leaders[0]['core']
-    node_name = leaders[0]['node_name']
-    node_ip = node_name.split(':')[0]
-    node_ip_to_replica_name_map[node_ip] = core_name
+    replicas = shards[shard_name]['replicas'].values
+    replicas.each do |replica|
+      replica_state = replica['state']
+      if replica_state == "active"
+        core_name = replica['core']
+        node_name = replica['node_name']
+        node_ip = node_name.split(':')[0]
+        node_ip_to_replica_name_map[node_ip] = core_name
+      end
+    end
   end 
   return node_ip_to_replica_name_map
 end
@@ -114,8 +119,8 @@ tims_s = time.strftime("%Y_%m_%d_%H_%M_%S")
 
 # Get input arguments to the script
 collection_name = ARGV[0]
-location = ARGV[1]
-backup_logfile = ARGV[2]
+location = ARGV[2]
+backup_logfile = ARGV[3]
 
 # Below variables will be resolved while copying template
 backup_log_dir = '<%= @backup_log_dir %>'
@@ -127,7 +132,7 @@ solr_host = '<%= @solr_host %>'
 solr_port = '<%= @solr_port_no %>'
 number_to_keep = '<%= @number_to_keep %>'
 zk_host_fqdns = '<%= @zk_host_fqdns %>'
-config_name = '<%= @config_name %>'
+config_name = ARGV[1]
 solr_lib_path = '<%= @solr_lib_path %>'
 
 zkHost = ""
@@ -146,17 +151,17 @@ logger.debug("Number of backup to keep : #{number_to_keep}")
 logger.debug("Backup location : #{location}")
 
 begin
-  shard_leader_ip_to_name_map = get_shard_leader_ip_to_name_map(solr_host, solr_port, collection_name, logger)
-  if shard_leader_ip_to_name_map.has_key?solr_host
-    core_name = shard_leader_ip_to_name_map[solr_host]
-    logger.debug("#{solr_host} is a core leader for collection #{collection_name} and executing backup command for collection #{collection_name}")
-    backup_name = "#{core_name}_#{tims_s}"
-    backup_core(solr_host, solr_port, location, core_name, backup_name, number_to_keep, logger)
+  shard_replica_ip_to_name_map = get_shard_replica_ip_to_name_map(solr_host, solr_port, collection_name, logger)
+  if shard_replica_ip_to_name_map.has_key?solr_host
     #Download config from zookeeper
     destination = "#{location}/#{config_name}_#{tims_s}"
     upload_or_download_zk_config('downconfig', solr_lib_path, zkHost, config_name, destination, logger)
+    core_name = shard_replica_ip_to_name_map[solr_host]
+    logger.debug("#{solr_host} is a core replica for collection #{collection_name} and executing backup command for collection #{collection_name}")
+    backup_name = "#{core_name}_#{tims_s}"
+    backup_core(solr_host, solr_port, location, core_name, backup_name, number_to_keep, logger)
   else
-    logger.debug("#{solr_host} is not a core leader for collection #{collection_name} and hence no backup will be taken on this node for collection #{collection_name}")
+    logger.debug("#{solr_host} is not a part of this collection #{collection_name} and hence no backup will be taken on this node for collection #{collection_name}")
   end
 
   #Delete old backups 
