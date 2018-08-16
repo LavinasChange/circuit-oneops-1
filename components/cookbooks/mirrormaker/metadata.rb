@@ -17,7 +17,7 @@ attribute 'version',
     :category => '1.Global',
     :help => 'Version of the mirrormaker',
     :order => 1,
-    :form => {'field' => 'select', 'options_for_select' => [['0.10.1.0', '0.10.1.0']]}
+    :form => {'field' => 'select', 'options_for_select' => [['0.10.1.0', '0.10.1.0'],['1.1.1-beta', '1.1.1']]}
   }
 
 attribute 'log_dir',
@@ -129,6 +129,7 @@ attribute 'topic_map_list',
      :category => '4.Mirrormaker Configuration Parameters',
      :help => 'List all the topics which mirrormaker will mirror and rename, for example: "topic1:topic1-new,topic2:topic2-new"',
      :order => 2,
+     :filter => {'all' => {'visible' => 'version:eq:0.10.1.0'}}
    }
 
 attribute 'mirrormaker_properties',
