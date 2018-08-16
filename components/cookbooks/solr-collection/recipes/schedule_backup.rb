@@ -80,7 +80,7 @@ end
 
 min, hour, day_of_month, month, day_of_week = cron.split
 
-cmd = "ruby #{solr_pack_dir}/backup_collection_core.rb #{collection_name} #{backup_location}"
+cmd = "ruby #{solr_pack_dir}/backup_collection_core.rb #{collection_name} #{node['config_name']} #{backup_location}"
 Chef::Log.info("command = #{cmd}")
 
 cron "#{username}-backup-#{collection_name}" do

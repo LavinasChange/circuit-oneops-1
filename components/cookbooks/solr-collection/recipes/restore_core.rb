@@ -84,8 +84,22 @@ else
     backup_config = backup_configs[0]
     # compare latest downloaded solrconfig.xml with backup. If upload_backup_config = true meaning, ignore any diff. as config will be restored from backup
     xml_diff("#{backup_location}/#{backup_config}/solrconfig.xml", "#{backup_location}/#{current_zk_config_name}/solrconfig.xml", !upload_backup_config)
-    # compare latest downloaded managed-schema with backup. If upload_backup_config = true meaning, ignore any diff. as config will be restored from backup
-    xml_diff("#{backup_location}/#{backup_config}/managed-schema", "#{backup_location}/#{current_zk_config_name}/managed-schema", !upload_backup_config)
+    # compare latest downloaded managed-schema/schema.xml with backup. If upload_backup_config = true meaning, ignore any diff. as config will be restored from backup
+    if File.file?("#{backup_location}/#{backup_config}/managed-schema")
+      if File.file?("#{backup_location}/#{current_zk_config_name}/managed-schema")
+        xml_diff("#{backup_location}/#{backup_config}/managed-schema", "#{backup_location}/#{current_zk_config_name}/managed-schema", !upload_backup_config)
+      else
+        Chef::Log.error("managed-schema configuration file is missing current zookeeper configuration. Cannot compare with backup configuration.")
+      end
+    else
+      if File.file?("#{backup_location}/#{backup_config}/schema.xml")
+        if File.file?("#{backup_location}/#{current_zk_config_name}/schema.xml")
+          xml_diff("#{backup_location}/#{backup_config}/schema.xml", "#{backup_location}/#{current_zk_config_name}/schema.xml", !upload_backup_config)
+        else
+          Chef::Log.error("schema.xml configuration file is missing current zookeeper configuration. Cannot compare with backup configuration.")
+        end
+      end
+    end
     # restore/upload the config from backup
     if upload_backup_config == true
       uploadCustomConfig(solr_version, zk_host_fqdns, config_name, "#{backup_location}/#{backup_config}") 
@@ -136,25 +150,25 @@ collection_api(host, port, params, nil, "/solr/admin/collections")
 Chef::Log.info("Removing #{node['ipaddress']} as it is already added as leader")
 replicas.delete(node['ipaddress'])
 
-# verify that this node is the leader as restore will be done on this node/leader
-shard_leader_ip_to_name_map = get_shard_leader_ip_to_name_map(host, port, collection_name, shard_name)
-Chef::Log.info("shard_leader_ip_to_name_map = #{shard_leader_ip_to_name_map.to_json}")
-if !shard_leader_ip_to_name_map.has_key?node['ipaddress']
-  raise "#{node['ipaddress']} has the backup for shard #{shard_name} but it is not a leader"
+
+shard_replica_ip_to_name_map = get_shard_replica_ip_to_name_map(host, port, collection_name, shard_name)
+Chef::Log.info("shard_replica_ip_to_name_map = #{shard_replica_ip_to_name_map.to_json}")
+if !shard_replica_ip_to_name_map.has_key?node['ipaddress']
+  raise "#{node['ipaddress']} has the backup for shard #{shard_name} but is not part of this collection"
 else
-  Chef::Log.info("#{node['ipaddress']} has the backup for shard #{shard_name} and also a leader")
+  Chef::Log.info("#{node['ipaddress']} has the backup for shard #{shard_name}")
 end
 
 #backups folders starts with 'snapshot.'
 backup_name.sub! 'snapshot.', ''
 
 #restore the core from selected backup  
-restore(host, port, collection_name, shard_leader_ip_to_name_map[host], backup_location,backup_name)
+restore(host, port, collection_name, shard_replica_ip_to_name_map[host], backup_location,backup_name)
 
 #monitor the restore progress.
 status = 'In Progress'
 while ['In Progress'].include?status do
-  status = get_core_backup_restore_status(host, port, shard_leader_ip_to_name_map[host], 'restorestatus')
+  status = get_core_backup_restore_status(host, port, shard_replica_ip_to_name_map[host], 'restorestatus')
   Chef::Log.info("status => #{status}")
   if status.eql?'failed'
     raise "restore failed"
