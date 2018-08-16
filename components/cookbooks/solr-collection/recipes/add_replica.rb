@@ -10,9 +10,17 @@ cloud_provider = CloudProvider.new(node)
 clouds_payload = cloud_provider.get_clouds_payload(node)
 computes_payload = CloudProvider.get_computes_payload(node)
 
+# 4 cases for Node sharing Option
+# 1. Share the IPs of the collections which is listed in node['collections_for_node_sharing']
+# 2. [] -> Do not share any IP which is already part of any existing collection
+# 3. [NO_OP_BY_DEFAULT] -> Apply the replica distribution normally without any filtering of IPs
+# 4. If User doesn't provide any values -> consider it as NO_OP_BY_DEFAULT
 collections_for_node_sharing = JSON.parse(node['collections_for_node_sharing'])
 collections_for_node_sharing.collect! {|collection_name| collection_name.strip }
-collections_for_node_sharing = collections_for_node_sharing.reject {|coll| coll == node['collection_name'] || coll == 'NO_OP_BY_DEFAULT'}
+collections_for_node_sharing = collections_for_node_sharing.reject {|coll| coll == node['collection_name']}
+if collections_for_node_sharing.size > 1
+    collections_for_node_sharing = collections_for_node_sharing.reject {|coll| coll == 'NO_OP_BY_DEFAULT'}
+end
 
 collection_specs = []
 
@@ -34,6 +42,6 @@ complete_payload = {
     "port_no" => port_no
 }
 
-Chef::Log.info("the replica distibutor pyaload -- #{complete_payload}")
+Chef::Log.info("the replica distibutor payload -- #{complete_payload}")
 
 solr_replica_distributor(complete_payload)
