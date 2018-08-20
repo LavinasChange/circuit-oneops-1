@@ -70,11 +70,13 @@ resource "volume-app",
   :cookbook => "oneops.1.volume",
   :design => true,
   :requires => { "constraint" => "1..1", "services" => "compute" },
-  :attributes => {  "mount_point"   => '/app/',
-                    "size"          => '100%FREE',
-                    "device"        => '',
-                    "fstype"        => 'ext4',
-                    "options"       => 'defaults,noatime'
+  :attributes => {  "mount_point"      => '/app/',
+                    "size"             => '100%FREE',
+                    "device"           => '',
+                    "fstype"           => 'ext4',
+                    "options"          => 'defaults,noatime',
+                    "control_skip_vol" => 'true',
+                    "skip_vol"         => 'true'
                  },
   :monitors => {
       'usage' =>  {'description' => 'Usage',
