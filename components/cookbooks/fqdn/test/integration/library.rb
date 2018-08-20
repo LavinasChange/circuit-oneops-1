@@ -552,6 +552,7 @@ class Library
     else
       primary_platform_dns_name = dns_name.split('.').select{|i| (i != service_attrs['cloud_dns_id'])}.join('.')
     end
+    $node.set["primary_platform_dns_name"] = primary_platform_dns_name
 
     if $node['workorder']['rfcCi']['ciAttributes'].has_key?('ptr_enabled') &&
         $node['workorder']['rfcCi']['ciAttributes']['ptr_enabled'] == "true"
@@ -572,7 +573,6 @@ class Library
         deletable_entries.push(ptr)
       end
     end
-
 
     # platform level
     if $node['workorder']['cloud']['ciAttributes']['priority'] != "1"
@@ -660,6 +660,7 @@ class Library
       key = entry['name']
       entries_hash[key] = entry['values']
     end
+
     puts "***RESULT:entries=#{JSON.dump(entries_hash)}"
     return entries
   end

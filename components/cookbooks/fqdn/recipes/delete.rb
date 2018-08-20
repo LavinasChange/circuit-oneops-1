@@ -24,34 +24,9 @@ if node[:workorder][:services].has_key?("gdns")
   cloud_service =  node[:workorder][:services][:gdns][cloud_name]
 end
 
-node.set["is_last_active_cloud_in_dc"] = true
-if node.workorder.box.ciAttributes.has_key?("is_platform_enabled") &&
-   node.workorder.box.ciAttributes.is_platform_enabled == 'true' &&
-   node.workorder.payLoad.has_key?("activeclouds") && !cloud_service.nil?
-   node.workorder.payLoad["activeclouds"].each do |service|
+node.set["is_last_active_cloud_in_dc"] = is_last_active_cloud_in_dc
 
-     if service[:ciAttributes].has_key?("gslb_site_dns_id") &&
-        service[:nsPath] != cloud_service[:nsPath] &&
-        service[:ciAttributes][:gslb_site_dns_id] == cloud_service[:ciAttributes][:gslb_site_dns_id]
-
-        Chef::Log.info("not last active cloud in DC. #{service[:nsPath].split("/").last}")
-        node.set["is_last_active_cloud_in_dc"] = false
-     end
-   end
-end
-
-node.set["is_last_active_cloud"] = true
-if node.workorder.box.ciAttributes.has_key?("is_platform_enabled") &&
-   node.workorder.box.ciAttributes.is_platform_enabled == 'true' &&
-   node.workorder.payLoad.has_key?("activeclouds") && !cloud_service.nil?
-   node.workorder.payLoad["activeclouds"].each do |service|
-
-     if service[:nsPath] != cloud_service[:nsPath]
-        Chef::Log.info("not last active cloud: #{service[:nsPath].split("/").last}")
-        node.set["is_last_active_cloud"] = false
-     end
-   end
-end
+node.set["is_last_active_cloud"] = is_last_active_cloud
 
 include_recipe "fqdn::get_authoritative_nameserver"
 

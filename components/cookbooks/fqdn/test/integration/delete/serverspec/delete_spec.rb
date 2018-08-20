@@ -27,8 +27,15 @@ entries.each do |entry|
     dns_val.each do |value|
       flag = lib.check_record(dns_name, value)
       context "FQDN mapping" do
-        it "should be deleted" do
-          expect(flag).to eq(true)
+        if dns_name == $node.primary_platform_dns_name && $node['workorder']['payLoad'].has_key?("lb") && !$node['is_last_active_cloud_in_dc'] && !$node.has_key?("gslb_domain") &&
+            ($node['dns_action'] == "delete" || $node['workorder']['cloud']['ciAttributes']['priority'] == "2")
+          it "should exist" do
+            expect(flag).to eq(false)
+          end
+        else
+          it "should be deleted" do
+            expect(flag).to eq(true)
+          end
         end
       end
     end
