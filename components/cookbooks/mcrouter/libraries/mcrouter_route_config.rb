@@ -64,7 +64,7 @@ module McrouterRouteConfig
     miss_limit = node['mcrouter']['miss_limit'].to_i
     miss_limit = 999 unless miss_limit > 0
 
-    return JSON.pretty_generate({
+    map = {
         'pools' => cloud_hash_pools,
         'route' => {
             'type' => 'OperationSelectorRoute',
@@ -83,7 +83,14 @@ module McrouterRouteConfig
                 }
             }
         }
-    })
+    }
+    if node['mcrouter'].has_key? 'touch_limit' and node['mcrouter']['touch_limit'].to_i != 0
+      map['route']['operation_policies']['touch'] = { # Limit touch command to only one replica
+        'type' => 'FailoverRoute',
+        'children' => cloud_routes.take( miss_limit )
+      }
+    end
+    return JSON.pretty_generate( map )
   end
 
   def self.exec_zone(cloud_id, compute)

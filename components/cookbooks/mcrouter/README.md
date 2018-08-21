@@ -35,4 +35,6 @@ Attributes
 * `verbosity` - Verbosity level
 * `additional_cli_opts` - Additional command line options
 * `policy` - get/gets uses MissFailoverRoute. All other operations use one of the following policies: AllAsyncRoute (default), AllSyncRoute, AllInitialRoute, AllInitialRoute, AllFastestRoute, and AllMajorityRoute
-* `route` -  Supported Routes: PoolRoute (default), HashRouteSalted : Use salted hash to server pool 
+* `route` -  Supported Routes: PoolRoute (default), HashRouteSalted : Use salted hash to server pool
+* `miss_limit` - Limits number of replicas to query by get/gets operations in case of cache miss. Default number "3" will limit queries to DC-local replicas only (for production). Value "0" means query all available
+* `touch_limit` - Limit touch command propagation to Mcrouter-local replica only ('true'/'false')
