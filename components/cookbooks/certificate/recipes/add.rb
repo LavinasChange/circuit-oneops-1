@@ -16,6 +16,7 @@ expires_on = node[:expiry_time]
 if !auto_provision.nil? && auto_provision == "true" && !provider.nil? && !provider.empty?
 	include_recipe provider + "::add_certificate" 
 	expires_on = node[:expiry_time]
+        include_recipe "certificate::copy"
 end
 
 #if key-managment service barbican is present in the workload , invoke the barbican::add recipe here
