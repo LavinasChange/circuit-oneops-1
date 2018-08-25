@@ -84,10 +84,10 @@ module McrouterRouteConfig
             }
         }
     }
-    if node['mcrouter'].has_key? 'touch_limit' and node['mcrouter']['touch_limit'].to_i != 0
-      map['route']['operation_policies']['touch'] = { # Limit touch command to only one replica
-        'type' => 'FailoverRoute',
-        'children' => cloud_routes.take( miss_limit )
+    if node['mcrouter'].has_key? 'touch_limit' and node['mcrouter']['touch_limit'].to_i > 0
+      map['route']['operation_policies']['touch'] = { # Limit touch command to configured number of replicas
+        'type' => 'AllFastestRoute',
+        'children' => cloud_routes.take( node['mcrouter']['touch_limit'].to_i )
       }
     end
     return JSON.pretty_generate( map )

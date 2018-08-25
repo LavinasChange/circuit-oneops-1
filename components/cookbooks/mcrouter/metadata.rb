@@ -185,7 +185,7 @@ attribute 'touch_limit',
     :description => "Touch Command Propagation Limit",
     :default => '',
     :format => {
-        :help => 'Zero or Empty value will cause touch command to execute on all replicas (default). Non-zero value will cause Mcrouter to execute touch command on only one Mcrouter-local replica, which will significantly reduce touch-traffic but can cause item expiration inconsistencies between replicas.',
+        :help => 'Zero or Empty value will cause touch command to execute on all replicas (default). A positive value will cause Mcrouter to limit sending touch command to only configured number of replicas, which will significantly reduce touch-traffic but can cause item expiration inconsistencies between replicas.',
         :category => '2.Advanced',
         :order => 12,
         :pattern => '[0-9]*'
