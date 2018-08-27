@@ -177,7 +177,7 @@ attribute 'rambuffersizemb',
 attribute 'maxbuffereddocs',
           :description  => "maxbuffereddocs",
           :required => false,
-          :default => '1000000',
+          :default => '100000',
           :format => {
               :help => 'The threshold for number of documents in memory, after which the documents will be flushed to hard disk',
               :category => '2.UpdateHandler',
