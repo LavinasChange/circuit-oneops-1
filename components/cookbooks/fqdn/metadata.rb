@@ -94,7 +94,7 @@ attribute 'entries',
 
 attribute 'service_type',
           :description => "Service Type",
-          :default     => 'torbit',
+          :default     => 'netscaler',
           :format      => {
             :important => true,
             :help      => 'Select the GSLB service provider type. Not applicable for hostname.',
