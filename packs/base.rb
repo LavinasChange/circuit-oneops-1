@@ -268,7 +268,7 @@ resource "fqdn",
          }
        ]
     }'
-  }, 
+  },
 'activeclouds' => {
     'description' => 'activeclouds',
     'definition' => '{
@@ -991,7 +991,7 @@ end
 
 [ { :from => 'hostname',    :to => 'os' },
   { :from => 'user',        :to => 'os' },
-  { :from => 'job',         :to => 'user' },    
+  { :from => 'job',         :to => 'user' },
   { :from => 'job',         :to => 'os' },
   { :from => 'volume',      :to => 'os' },
   { :from => 'certificate', :to => 'os' },
@@ -1011,7 +1011,7 @@ end
   { :from => 'download',    :to => 'os' },
   { :from => 'file',        :to => 'volume' },
   { :from => 'file',        :to => 'os' },
-  { :from => 'artifact',    :to => 'os' },    
+  { :from => 'artifact',    :to => 'os' },
   { :from => 'sensuclient', :to => 'compute'  },
   { :from => 'library',     :to => 'os' },
   { :from => 'objectstore',  :to => 'compute'},
@@ -1072,7 +1072,7 @@ end
 end
 
 # managed_via
-[ 'os', 'telegraf', 'filebeat', 'user', 'job', 'file', 'volume', 'share', 'download', 'library', 'daemon', 
+[ 'os', 'telegraf', 'filebeat', 'user', 'job', 'file', 'volume', 'share', 'download', 'library', 'daemon',
   'certificate', 'logstash', 'sensuclient', 'artifact', 'objectstore', 'secrets-client', 'baas-job', 'service-mesh'].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
@@ -1093,14 +1093,14 @@ end
 end
 
 procedure "gslb-migration",
-   :description => "Migrate GSLB to Torbit",
-     :arguments => {
-        "migrate" => {
-                "name" => "migrate",
-                "defaultValue" => "torbit",
-                "dataType" => "string"
-        }
-   },
+  :description => "Migrate GSLB to Torbit",
+  :arguments   => {
+    'migrate' => {
+      :name         => 'migrate',
+      :defaultValue => 'torbit',
+      :pattern      => %w(torbit netscaler)
+    }
+  },
   :definition => '{
     "flow": [
         {

@@ -94,27 +94,31 @@ attribute 'entries',
 
 attribute 'service_type',
           :description => "Service Type",
-          :default => 'netscaler',
-          :format => {
-              :important => true,
-              :help => 'Select the GSLB service provider type. Available types: netscaler/torbit. N/A for hostname.',
-              :category => '2.GSLB Config',
-              :order => 1,
-              :form => {'field' => 'select', 'options_for_select' => [['netscaler', 'netscaler'], ['torbit', 'torbit']]}
+          :default     => 'netscaler',
+          :format      => {
+            :important => true,
+            :help      => 'Select the GSLB service provider type. Not applicable for hostname.',
+            :category  => '2.GSLB Config',
+            :order     => 1,
+            :form      => {'field'              => 'select',
+                           'options_for_select' => {:default => [['netscaler', 'netscaler'],
+                                                                 ['torbit', 'torbit']],
+                                                    :cms_var => 'FQDN_SERVICE_TYPE_VALUES'}}
           }
 
 attribute 'distribution',
           :description => "LB Method",
-          :required => true,
-          :default => 'proximity',
-          :format => {
-              :help => 'GDNS distribution / GSLB lbmethod',
-              :category => '2.GSLB Config',
-              :order => 2,
-              :form => {'field' => 'select', 'options_for_select' => [
-                  ['Proximity', 'proximity'],
-                  ['Latency', 'latency'],
-                  ['RoundRobin', 'roundrobin']]}
+          :required    => true,
+          :default     => 'proximity',
+          :format      => {
+            :help     => 'GDNS distribution / GSLB lbmethod',
+            :category => '2.GSLB Config',
+            :order    => 2,
+            :form     => {'field'              => 'select',
+                          'options_for_select' => [
+                            ['Proximity', 'proximity'],
+                            ['Latency', 'latency'],
+                            ['RoundRobin', 'roundrobin']]}
           }
 
 
