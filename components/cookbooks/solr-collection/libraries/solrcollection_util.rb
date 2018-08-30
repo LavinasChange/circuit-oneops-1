@@ -1055,6 +1055,26 @@ module SolrCollection
         end
       end
 
+      #setting the merge metrics to be true in the solrconfig.xml file for the collection if the merge_metrics have been set to true for displaying
+      if node['merge_metrics'] == "true"
+        merge_metrics_props_map = {
+            "27_merge_major_docs_metrics"  => {
+                "parent_elem_path" => "config/indexConfig/metrics",
+                "elem_name" => "majorMergeDocs",
+                "elem_value" => "524288"
+            },
+
+            "28_merge_details"  => {
+                "parent_elem_path" => "config/indexConfig/metrics",
+                "elem_name" => "bool",
+                "attr_name" => "name",
+                "attr_value" => "mergeDetails",
+                "elem_value" => "true"
+            }
+        }
+        props_map.merge!(merge_metrics_props_map)
+      end
+
       if node["enable_query_source_tracker"] == "true"
            query_source_tracker_class = solr_custom_params['query_source_tracker_class']
            if query_source_tracker_class == nil || query_source_tracker_class.empty?
