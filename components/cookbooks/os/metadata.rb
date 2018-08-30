@@ -35,7 +35,6 @@ attribute 'tags',
           :description => "tags",
           :grouping    => 'bom',
           :data_type   => "hash",
-          :default     => "{}",
           :format      => {
             :help     => 'Tags',
             :category => '1.Identity',
