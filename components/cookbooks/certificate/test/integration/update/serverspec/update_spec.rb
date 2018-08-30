@@ -1,4 +1,5 @@
-require 'spec_helper'
+CIRCUIT_PATH = '/opt/oneops/inductor/circuit-oneops-1'.freeze
+require "#{CIRCUIT_PATH}/components/spec_helper.rb"
 
 pem = nil
 pfx = nil
@@ -12,20 +13,20 @@ if $node["workorder"]["payLoad"].has_key?("ManagedVia")
   pfx = cert_path+"/"+ci_name+"/"+cname+".pfx"
   key = cert_path+"/"+ci_name+"/"+cname+".key"
   ca_cert = cert_path+"/"+ci_name+"/ca_cert.crt"
-end
 
-describe file(pem) do
-  it { should be_file }
-end
+  describe file(pem) do
+    it { should be_file }
+  end
 
-describe file(pfx) do
-  it { should be_file }
-end
+  describe file(pfx) do
+    it { should be_file }
+  end
 
-describe file(key) do
-  it { should be_file }
-end
+  describe file(key) do
+    it { should be_file }
+  end
 
-describe file(ca_cert) do
-  it { should be_file }
+  describe file(ca_cert) do
+    it { should be_file }
+  end
 end
