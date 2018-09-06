@@ -64,6 +64,14 @@ template '/etc/init.d/kafka-rest' do
   action :create
 end
 
+# create "kafka-rest_status.sh" script for telegraf
+template "/usr/local/bin/kafka-rest_status.sh" do
+    source "kafka-rest_status.sh.erb"
+    owner "root"
+    group "root"
+    mode  '0755'
+end
+
 bash 'add jmx rmi port' do
   code <<-EOH
     sudo su
