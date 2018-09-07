@@ -82,7 +82,10 @@ class LbSpecUtils
 
     # skip deletes if other active clouds for same dc
     has_other_cloud_in_dc_active = false
-    if @node['workorder']['payLoad'].has_key?('primaryactiveclouds')
+    if @node['workorder']['box']['ciAttributes'].has_key?('is_platform_enabled') &&
+        @node['workorder']['box']['ciAttributes']['is_platform_enabled'] == 'true' &&
+        @node['workorder']['payLoad'].has_key?('primaryactiveclouds')
+      
       @node['workorder']['payLoad']['primaryactiveclouds'].each do |lb_service|
         if lb_service['ciAttributes']['gslb_site_dns_id'] == cloud_service['ciAttributes']['gslb_site_dns_id'] &&
             lb_service['nsPath'] != cloud_service['nsPath']
