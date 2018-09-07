@@ -403,7 +403,7 @@ resource "gclogcleanup-job",
     :weekday => "*",
     :cmd => '/etc/kafka/kafka_gclog_cleanup.sh 10'
 
-
+}
 resource "keystore",
          :cookbook => "oneops.1.keystore",
          :design => true,
