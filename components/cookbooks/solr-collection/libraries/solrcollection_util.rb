@@ -1083,49 +1083,62 @@ module SolrCollection
 
       end
 
-      props_map["25_search_comp_log_delete_update_processor"] = {
-          "parent_elem_path" => "config/updateRequestProcessorChain",
-          "parent_elem_attrs" => {
-              "name" => "custom"
+      search_comp_log_delete_update_processor_map_25 = {
+          "1_solrLogUpdateProcessorFactory" =>  {
+              "parent_elem_path" => "config/updateRequestProcessorChain",
+              "parent_elem_attrs" => {
+                  "name" => "custom"
+              },
+              "elem_name" => "processor",
+              "attr_name" => "class",
+              "attr_value" => "solr.LogUpdateProcessorFactory"
           },
-          "parent_mandatory_children" => [
-              {
-                  "elem_name" => "processor",
-                  "attr_name" => "class",
-                  "attr_value" => "solr.LogUpdateProcessorFactory"
+          "2_DistributedUpdateProcessorFactory" => {
+              "parent_elem_path" => "config/updateRequestProcessorChain",
+              "parent_elem_attrs" => {
+                  "name" => "custom"
               },
-              {
-                  "elem_name" => "processor",
-                  "attr_name" => "class",
-                  "attr_value" => "solr.DistributedUpdateProcessorFactory"
+              "elem_name" => "processor",
+              "attr_name" => "class",
+              "attr_value" => "solr.DistributedUpdateProcessorFactory"
+          },
+          "3_RunUpdateProcessorFactory" => {
+              "parent_elem_path" => "config/updateRequestProcessorChain",
+              "parent_elem_attrs" => {
+                  "name" => "custom"
               },
-              {
-                  "elem_name" => "processor",
-                  "attr_name" => "class",
-                  "attr_value" => "solr.RunUpdateProcessorFactory"
-              }
-          ]
+              "elem_name" => "processor",
+              "attr_name" => "class",
+              "attr_value" => "solr.RunUpdateProcessorFactory"
+          }
       }
+      props_map.merge!(search_comp_log_delete_update_processor_map_25)
 
       #Default value of enable_log_delete_query_processor is set to true. Solr custom component jar versions 0.0.1 and 0.0.2
       # do not have this feature. So, check for jar version and add it only when solr_custom_component_version is >=0.0.3
       if node["enable_log_delete_query_processor"] == "true" and node["solr_custom_component_version"] != '0.0.1' and node["solr_custom_component_version"] != '0.0.2'
         log_delete_query_processor = {
-            "elem_name" => "processor",
-            "attr_name" => "class",
-            "attr_value" => "com.walmart.strati.search.solr.LogDeleteQueryProcessorFactory",
-            "add_after_attr_name" => "class",
-            "add_after_attr_value" => "solr.DistributedUpdateProcessorFactory",
-            "elem_children" => [
-                {
-                    "elem_name" => "bool",
-                    "attr_name" => "name",
-                    "attr_value" => "logDeleteQuery",
-                    "elem_value" => "true"
-                }
-            ]
+              "4_LogDeleteQuery" => {
+              "parent_elem_path" => "config/updateRequestProcessorChain",
+              "parent_elem_attrs" => {
+                  "name" => "custom"
+              },
+              "elem_name" => "processor",
+              "attr_name" => "class",
+              "attr_value" => "com.walmart.strati.search.solr.LogDeleteQueryProcessorFactory",
+              "add_after_attr_name" => "class",
+              "add_after_attr_value" => "solr.DistributedUpdateProcessorFactory",
+              "elem_children" => [
+                  {
+                      "elem_name" => "bool",
+                      "attr_name" => "name",
+                      "attr_value" => "logDeleteQuery",
+                      "elem_value" => "true"
+                  }
+              ]
+          }
         }
-        props_map["25_search_comp_log_delete_update_processor"].merge!(log_delete_query_processor)
+        props_map.merge!(log_delete_query_processor)
         Chef::Log.info("Log Delete Query Processor is enabled")
       else
         Chef::Log.info("Log Delete Query Processor is disabled")
