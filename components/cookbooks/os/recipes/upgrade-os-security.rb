@@ -18,12 +18,5 @@ end
 Chef::Log.info("Updating bash and security packages.")
 execute cmd
 
-cur_tag = JSON.parse(node.workorder.ci["ciAttributes"]["tags"])
 
-##Tag the current time-stamp.
-cur_ts = Time.now.utc.iso8601
-tags = {
-  "security"=> cur_ts 
-  }
-
-puts "***RESULT:tags="+JSON.dump(cur_tag.merge(tags))
+puts "***RESULT:tags="+JSON.dump({"security" => Time.now.utc.iso8601})

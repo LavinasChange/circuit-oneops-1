@@ -1,0 +1,8 @@
+#!/bin/bash
+
+/sbin/service kafka-rest status >/dev/null
+if [ "$?" = "1" ]; then
+  echo {\"kafka-rest_status\":0}
+else
+  echo {\"kafka-rest_status\":1}
+fi

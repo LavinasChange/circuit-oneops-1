@@ -180,13 +180,24 @@ attribute 'miss_limit',
         :order => 11,
         :pattern => '[0-9]*'
     }
+
+attribute 'touch_limit',
+    :description => "Touch Command Propagation Limit",
+    :default => '',
+    :format => {
+        :help => 'Zero or Empty value will cause touch command to execute on all replicas (default). A positive value will cause Mcrouter to limit sending touch command to only configured number of replicas, which will significantly reduce touch-traffic but can cause item expiration inconsistencies between replicas.',
+        :category => '2.Advanced',
+        :order => 12,
+        :pattern => '[0-9]*'
+    }
+
 attribute 'pool_group_by',
           :description => 'Pool Group By',
           :default => 'Cloud',
           :format => {
               :category => '2.Advanced',
               :help => "Pool Group By. Example Pool Group By: 'Cloud' or 'CloudFaultDomain'",
-              :order => 12,
+              :order => 13,
           }
 
 attribute 'additional_cli_opts',

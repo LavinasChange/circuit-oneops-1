@@ -171,7 +171,7 @@ resource "solrcloud",
     'enable_cinder' => 'true',
     'solr_custom_component_version' => '0.0.3',
     'solr_api_timeout_sec' => '300',
-    'solr_monitor_version' => '2.0.1',
+    'solr_monitor_version' => '2.0.7',
     'custom_metric_yaml' => ''
   },
 
@@ -573,7 +573,8 @@ resource "solr-collection",
      'backup_enabled' => false,
      'backup_cron' => '0 0 * * *',
      'backup_location' => '/app/solr_backup',
-     'backup_number_to_keep' => '2'
+     'backup_number_to_keep' => '2',
+     'merge_metrics' => 'false'
   },
 
   :payloads => {

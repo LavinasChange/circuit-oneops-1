@@ -1,0 +1,37 @@
+######################################################################
+#Script : To delete older gc logs
+#Changes: 
+#Create Date :Jan 11, 2018                    
+######################################################################
+
+#########################################################################
+# Debug
+DEBUG="N"
+
+if [ $DEBUG = "Y" ]
+then
+set -x
+fi
+
+#########################################################################
+# Variables
+
+
+LOGD="/var/log/kafka"
+LOGF="kafkaServer*"
+LOG=$LOGD/$LOGF
+
+if [ -z "$1" ]
+  then
+    echo "Number of files to be deleted is empty. Exiting the script.."
+    exit
+  else
+    File="$1"
+    echo $File
+fi
+
+
+
+##Removing older gc logs
+ls -1tr $LOG | head -n -$File |  xargs -d '\n' rm -f --
+

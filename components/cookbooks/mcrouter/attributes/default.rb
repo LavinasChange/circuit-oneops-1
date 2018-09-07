@@ -46,6 +46,7 @@ default['mcrouter']['num_proxies'] = '1'
 default['mcrouter']['server_timeout'] = '1000'
 default['mcrouter']['verbosity'] = 'disabled'
 default['mcrouter']['miss_limit'] = '2'
+default['mcrouter']['touch_limit'] = ''
 default['mcrouter']['additional_cli_opts'] = '[]'
 
     

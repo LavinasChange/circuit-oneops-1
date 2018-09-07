@@ -281,6 +281,30 @@ resource 'java',
               :flavor => "oracle"
           }
 
+resource "telegraf",
+  :cookbook => "oneops.1.telegraf",
+  :design => true,
+  :requires => {
+       "constraint" => "0..10",
+       :services => "mirror"
+  },
+  :monitors => {
+    'telegrafprocess' => {:description => 'TelegrafProcess',
+      :source => '',
+      :enable => 'true',
+      :chart => {'min' => '0', 'max' => '100', 'unit' => 'Percent'},
+      :cmd => 'check_process_count!telegraf',
+      :cmd_line => '/opt/nagios/libexec/check_process_count.sh "$ARG1$"',
+      :metrics => {
+            'count' => metric(:unit => '', :description => 'Running Process'),
+      },
+      :thresholds => {
+            'TelegrafProcessLow' => threshold('1m', 'avg', 'count', trigger('<', 1, 1, 1), reset('>=', 1, 1, 1),'unhealthy'),
+            'TelegrafProcessHigh' => threshold('1m', 'avg', 'count', trigger('>=', 200, 1, 1), reset('<', 200, 1, 1))
+      }
+    }
+  }
+  
 resource "hostname",
         :cookbook => "oneops.1.fqdn",
         :design => true,
@@ -361,7 +385,25 @@ resource "volume-kafka",
                   },
                 }
     }
+    
+resource "gclogcleanup-job",
+:cookbook => "job",
+:design => true,
+:requires => {
+    :constraint => "1..1",
+    :help => "Run schedule cron job"
+},
+:attributes => {
+    :user => 'kafka',
+    :description => 'CRON to clean up older kafka gc logs',
+    :minute => "0",
+    :hour => "23",
+    :day => "*",
+    :month => "*",
+    :weekday => "*",
+    :cmd => '/etc/kafka/kafka_gclog_cleanup.sh 10'
 
+}
 resource "keystore",
          :cookbook => "oneops.1.keystore",
          :design => true,
@@ -406,7 +448,7 @@ resource "jolokia_proxy",
             'up' => metric(:unit => '%', :description => 'Percent Up'),
         },
         :thresholds => {
-            'JolokiaProxyProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1))
+            'JolokiaProxyProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1),'unhealthy')
         }
     }
 }
@@ -418,6 +460,7 @@ resource "jolokia_proxy",
   {:from => 'user-kafka', :to => 'os'},
   {:from => 'client-certs-download', :to => 'os'},
   {:from => 'java', :to => 'os'},
+  {:from => 'telegraf', :to => 'os'},
   {:from => 'artifact', :to => 'os'},
   {:from => 'storage', :to => 'os'},
   {:from => 'jolokia_proxy', :to => 'java'  },
@@ -430,6 +473,7 @@ resource "jolokia_proxy",
   {:from => 'kafka', :to => 'hostname'},
   {:from => 'kafka', :to => 'certificate'},
   {:from => 'kafka', :to => 'keystore'},
+  {:from => 'gclogcleanup-job', :to => 'kafka'}
   {:from => 'keystore', :to => 'certificate'},
   {:from => 'os', :to => 'compute'},
   
@@ -489,7 +533,7 @@ relation "ring::depends_on::kafka",
 # end
 
 # managed_via
-['os','user-kafka', 'artifact', 'kafka', 'java', 'library','volume-kafka', 'volume-persistent', 'keystore', 'client-certs-download', 'jolokia_proxy'].each do |from|
+['os','user-kafka', 'artifact', 'kafka', 'java', 'library','volume-kafka', 'volume-persistent', 'keystore', 'client-certs-download', 'jolokia_proxy' , 'telegraf', 'gclogcleanup-job'].each do |from|
   relation "#{from}::managed_via::compute",
            :except => ['_default'],
            :relation_name => 'ManagedVia',

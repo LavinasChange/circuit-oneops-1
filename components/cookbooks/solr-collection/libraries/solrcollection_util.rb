@@ -856,69 +856,6 @@ module SolrCollection
 
       solr_custom_params = node['solr_custom_params']
       props_map = {
-          "1_updatelog_numrecordstokeep" => {
-              #parent element XPATH, the element under which needs to be changed
-              "parent_elem_path" => "config/updateHandler/updateLog",
-              #child element name
-              "elem_name"  => "int",
-              #attribute used to select the correct child element
-              "attr_name"  => "name",
-              #attribuate value for the child element
-              "attr_value" => "numRecordsToKeep"
-
-          },
-          "2_updatelog_maxnumlogstokeep" => {
-              #parent element XPATH, the element under which needs to be changed
-              "parent_elem_path" => "config/updateHandler/updateLog",
-              #child element name
-              "elem_name"  => "int",
-              #attribute used to select the correct child element
-              "attr_name"  => "name",
-              #attribute value for the child element
-              "attr_value" => "maxNumLogsToKeep"
-
-          },
-          "3_mergepolicyfactory_maxmergeatonce"  => {
-              "parent_elem_path" => "config/indexConfig/mergePolicyFactory",
-              #attributes to create if the element needs to be created
-              "parent_elem_attrs" => {
-                  "class" => "org.apache.solr.index.TieredMergePolicyFactory"
-              },
-              "elem_name"  => "int",
-              "attr_name"  => "name",
-              "attr_value" => "maxMergeAtOnce"
-          },
-          "4_mergepolicyfactory_segmentspertier"  => {
-              "parent_elem_path" => "config/indexConfig/mergePolicyFactory",
-              "parent_elem_attrs" => {
-                  "class" => "org.apache.solr.index.TieredMergePolicyFactory"
-              },
-              "elem_name"  => "int",
-              "attr_name"  => "name",
-              "attr_value" => "segmentsPerTier"
-          },
-          "5_rambuffersizemb"  => {
-              "parent_elem_path" => "config/indexConfig",
-              "elem_name"  => "ramBufferSizeMB"
-          },
-          "6_maxbuffereddocs"  => {
-              "parent_elem_path" => "config/indexConfig",
-              "elem_name"  => "maxBufferedDocs"
-          },
-          "7_request_select_defaults_timeallowed"  => {
-                  "parent_elem_path" => "config/requestHandler[@name='/select']/lst[@name='defaults']",
-                  #attributes to create if the element needs to be created
-                  "parent_elem_attrs" => {
-                      "class" => "solr.SearchHandler"
-                  },
-                  "elem_name"  => "int",
-                  "attr_name"  => "name",
-                  "attr_value" => "timeAllowed"
-          },
-          "8_slow_query_threshold_millis" => {
-              "parent_elem_path" => "config/query",
-              "elem_name"  => "slowQueryThresholdMillis"
-          },
           "9_request_parser_add_http_request_to_context" => {
               "parent_elem_path" => "config/requestDispatcher",
               "elem_name"  => "requestParsers",
@@ -933,7 +870,7 @@ module SolrCollection
                   "regex" => "solr-custom-components-\\d.*\\.jar"
               },
               "elem_name"  => ""
-          },
+          }
           # "11_enable_search_comp_request_select_last_comp_block_expensive"  => {
           #     "parent_elem_path" => "config/requestHandler[@name='/select']",
           #     #attributes to create if the element needs to be created
@@ -1055,6 +992,26 @@ module SolrCollection
         end
       end
 
+      #setting the merge metrics to be true in the solrconfig.xml file for the collection if the merge_metrics have been set to true for displaying
+      if node['merge_metrics'] == "true"
+        merge_metrics_props_map = {
+            "27_merge_major_docs_metrics"  => {
+                "parent_elem_path" => "config/indexConfig/metrics",
+                "elem_name" => "majorMergeDocs",
+                "elem_value" => "524288"
+            },
+
+            "28_merge_details"  => {
+                "parent_elem_path" => "config/indexConfig/metrics",
+                "elem_name" => "bool",
+                "attr_name" => "name",
+                "attr_value" => "mergeDetails",
+                "elem_value" => "true"
+            }
+        }
+        props_map.merge!(merge_metrics_props_map)
+      end
+
       if node["enable_query_source_tracker"] == "true"
            query_source_tracker_class = solr_custom_params['query_source_tracker_class']
            if query_source_tracker_class == nil || query_source_tracker_class.empty?
@@ -1174,37 +1131,121 @@ module SolrCollection
         Chef::Log.info("Log Delete Query Processor is disabled")
       end
 
-
-      if not node["updatelog_numrecordstokeep"].nil?
-          props_map["1_updatelog_numrecordstokeep"]["elem_value"] = node["updatelog_numrecordstokeep"]
+      if (not node["updatelog_numrecordstokeep"].nil?) and (not node["updatelog_numrecordstokeep"].to_s.empty?)
+        updatelog_numrecordstokeep_map={
+            "1_updatelog_numrecordstokeep" => {
+                #parent element XPATH, the element under which needs to be changed
+                "parent_elem_path" => "config/updateHandler/updateLog",
+                #child element name
+                "elem_name"  => "int",
+                #attribute used to select the correct child element
+                "attr_name"  => "name",
+                #attribuate value for the child element
+                "attr_value" => "numRecordsToKeep",
+                "elem_value" => node["updatelog_numrecordstokeep"]
+            }
+        }
+        props_map.merge!(updatelog_numrecordstokeep_map)
       end
 
-      if not node["mergepolicyfactory_maxmergeatonce"].nil?
-        props_map["3_mergepolicyfactory_maxmergeatonce"]["elem_value"] = node["mergepolicyfactory_maxmergeatonce"]
+      if (not node["mergepolicyfactory_maxmergeatonce"].nil?) and (not node["mergepolicyfactory_maxmergeatonce"].to_s.empty?)
+        mergepolicyfactory_maxmergeatonce_map={
+            "3_mergepolicyfactory_maxmergeatonce"  => {
+                "parent_elem_path" => "config/indexConfig/mergePolicyFactory",
+                #attributes to create if the element needs to be created
+                "parent_elem_attrs" => {
+                    "class" => "org.apache.solr.index.TieredMergePolicyFactory"
+                },
+                "elem_name"  => "int",
+                "attr_name"  => "name",
+                "attr_value" => "maxMergeAtOnce",
+                "elem_value" => node["mergepolicyfactory_maxmergeatonce"]
+            }
+        }
+        props_map.merge!(mergepolicyfactory_maxmergeatonce_map)
       end
 
-      if not node["mergepolicyfactory_segmentspertier"].nil?
-        props_map["4_mergepolicyfactory_segmentspertier"]["elem_value"] = node["mergepolicyfactory_segmentspertier"]
+      if (not node["mergepolicyfactory_segmentspertier"].nil?) and (not node["mergepolicyfactory_segmentspertier"].to_s.empty?)
+        mergepolicyfactory_segmentspertier_map={
+            "4_mergepolicyfactory_segmentspertier"  => {
+                "parent_elem_path" => "config/indexConfig/mergePolicyFactory",
+                "parent_elem_attrs" => {
+                    "class" => "org.apache.solr.index.TieredMergePolicyFactory"
+                },
+                "elem_name"  => "int",
+                "attr_name"  => "name",
+                "attr_value" => "segmentsPerTier",
+                "elem_value" => node["mergepolicyfactory_segmentspertier"]
+            }
+        }
+        props_map.merge!(mergepolicyfactory_segmentspertier_map)
       end
 
-      if not node["rambuffersizemb"].nil?
-        props_map["5_rambuffersizemb"]["elem_value"] = node["rambuffersizemb"]
+      if (not node["rambuffersizemb"].nil?) and (not node["rambuffersizemb"].to_s.empty?)
+        rambuffersizemb_map={
+            "5_rambuffersizemb"  => {
+                "parent_elem_path" => "config/indexConfig",
+                "elem_name"  => "ramBufferSizeMB",
+                "elem_value" => node["rambuffersizemb"]
+            }
+        }
+        props_map.merge!(rambuffersizemb_map)
       end
 
-      if not node["maxbuffereddocs"].nil?
-        props_map["6_maxbuffereddocs"]["elem_value"] = node["maxbuffereddocs"]
+      if (not node["maxbuffereddocs"].nil?) and (not node["maxbuffereddocs"].to_s.empty?)
+        maxbuffereddocs_map={
+            "6_maxbuffereddocs"  => {
+                "parent_elem_path" => "config/indexConfig",
+                "elem_name"  => "maxBufferedDocs",
+                "elem_value" => node["maxbuffereddocs"]
+            }
+        }
+        props_map.merge!(maxbuffereddocs_map)
       end
 
-      if not node["updatelog_maxnumlogstokeep"].nil?
-        props_map["2_updatelog_maxnumlogstokeep"]["elem_value"] = node["updatelog_maxnumlogstokeep"]
+      if (not node["updatelog_maxnumlogstokeep"].nil?) and (not node["updatelog_maxnumlogstokeep"].to_s.empty?)
+        updatelog_maxnumlogstokeep_map={
+            "2_updatelog_maxnumlogstokeep" => {
+                #parent element XPATH, the element under which needs to be changed
+                "parent_elem_path" => "config/updateHandler/updateLog",
+                #child element name
+                "elem_name"  => "int",
+                #attribute used to select the correct child element
+                "attr_name"  => "name",
+                #attribute value for the child element
+                "attr_value" => "maxNumLogsToKeep",
+                "elem_value" => node["updatelog_maxnumlogstokeep"]
+            }
+        }
+        props_map.merge!(updatelog_maxnumlogstokeep_map)
       end
 
-      if not node["request_select_defaults_timeallowed"].nil?
-        props_map["7_request_select_defaults_timeallowed"]["elem_value"] = node["request_select_defaults_timeallowed"]
+      if (not node["request_select_defaults_timeallowed"].nil?) and (not node["request_select_defaults_timeallowed"].to_s.empty?)
+        request_select_defaults_timeallowed_map={
+            "7_request_select_defaults_timeallowed"  => {
+                "parent_elem_path" => "config/requestHandler[@name='/select']/lst[@name='defaults']",
+                #attributes to create if the element needs to be created
+                "parent_elem_attrs" => {
+                    "class" => "solr.SearchHandler"
+                },
+                "elem_name"  => "int",
+                "attr_name"  => "name",
+                "attr_value" => "timeAllowed",
+                "elem_value" => node["request_select_defaults_timeallowed"]
+            }
+        }
+        props_map.merge!(request_select_defaults_timeallowed_map)
       end
 
-      if not node["slow_query_threshold_millis"].nil?
-        props_map["8_slow_query_threshold_millis"]["elem_value"] = node["slow_query_threshold_millis"]
+      if (not node["slow_query_threshold_millis"].nil?) and (not node["slow_query_threshold_millis"].to_s.empty?)
+        slow_query_threshold_millis_map={
+            "8_slow_query_threshold_millis" => {
+                "parent_elem_path" => "config/query",
+                "elem_name"  => "slowQueryThresholdMillis",
+                "elem_value" => node["slow_query_threshold_millis"]
+            }
+        }
+        props_map.merge!(slow_query_threshold_millis_map)
       end
 
       if node['min_rf'] != nil && !node['min_rf'].empty?
