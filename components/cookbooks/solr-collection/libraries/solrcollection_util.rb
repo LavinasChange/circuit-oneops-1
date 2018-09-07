@@ -1147,21 +1147,33 @@ module SolrCollection
                   "attr_name" => "class",
                   "attr_value" => "solr.RunUpdateProcessorFactory"
               }
-          ],
-          "elem_name" => "processor",
-          "attr_name" => "class",
-          "attr_value" => "com.walmart.strati.search.solr.LogDeleteQueryProcessorFactory",
-          "add_after_attr_name" => "class",
-          "add_after_attr_value" => "solr.DistributedUpdateProcessorFactory",
-          "elem_children" => [
-              {
-                  "elem_name" => "bool",
-                  "attr_name" => "name",
-                  "attr_value" => "logDeleteQuery",
-                  "elem_value" => "true"
-              }
           ]
       }
+
+      #Default value of enable_log_delete_query_processor is set to true. Solr custom component jar versions 0.0.1 and 0.0.2
+      # do not have this feature. So, check for jar version and add it only when solr_custom_component_version is >=0.0.3
+      if node["enable_log_delete_query_processor"] == "true" and node["solr_custom_component_version"] != '0.0.1' and node["solr_custom_component_version"] != '0.0.2'
+        log_delete_query_processor = {
+            "elem_name" => "processor",
+            "attr_name" => "class",
+            "attr_value" => "com.walmart.strati.search.solr.LogDeleteQueryProcessorFactory",
+            "add_after_attr_name" => "class",
+            "add_after_attr_value" => "solr.DistributedUpdateProcessorFactory",
+            "elem_children" => [
+                {
+                    "elem_name" => "bool",
+                    "attr_name" => "name",
+                    "attr_value" => "logDeleteQuery",
+                    "elem_value" => "true"
+                }
+            ]
+        }
+        props_map["25_search_comp_log_delete_update_processor"].merge!(log_delete_query_processor)
+        Chef::Log.info("Log Delete Query Processor is enabled")
+      else
+        Chef::Log.info("Log Delete Query Processor is disabled")
+      end
+
 
       if not node["updatelog_numrecordstokeep"].nil?
           props_map["1_updatelog_numrecordstokeep"]["elem_value"] = node["updatelog_numrecordstokeep"]
