@@ -11,6 +11,8 @@ kafka_user = node['kafka']['user']
 # set kafka config dir - specified in broker.rb attribute
 kafka_config_dir = node['kafka']['config_dir']
 
+kafka_bin_dir = node['kafka']['kafka_bin_dir']
+
 # create kafka user
 user "#{kafka_user}" do
   system true
@@ -144,6 +146,22 @@ template "#{kafka_config_dir}/log4j.properties" do
     owner "#{kafka_user}"
     group "#{kafka_user}"
     mode  '0664'
+end
+
+# Change kafka gc log location and enable rotation
+template "#{kafka_bin_dir}/kafka-run-class.sh" do
+    source "kafka-run-class.sh.erb"
+    owner "#{kafka_user}"
+    group "#{kafka_user}"
+    mode  '0755'
+end
+
+# Drop kafka gc log cleanup script
+template "#{kafka_config_dir}/kafka_gclog_cleanup.sh" do
+    source "kafka_gclog_cleanup.sh.erb"
+    owner "#{kafka_user}"
+    group "#{kafka_user}"
+    mode  '0755'
 end
 
 Chef::Log.info("Memory is: #{node['memory']['total']}")
