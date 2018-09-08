@@ -335,7 +335,7 @@ attribute 'backup_cron',
           :description => 'Backup Schedule',
           :format => {
               :help => "Solr backup cron scedule (minute hour day_of_month month day_of_week) ex for every 10 min=> */10 * * * 1",
-              :category => '8.Solr Backup',
+              :category => '9.Solr Backup',
               :filter => {"all" => {"visible" => ('backup_enabled:eq:true')}},
               :order => 2
           }
@@ -344,7 +344,7 @@ attribute 'backup_location',
           :description => 'Backup Location',
           :format => {
               :help => "Solr backup directory",
-              :category => '8.Solr Backup',
+              :category => '9.Solr Backup',
               :filter => {"all" => {"visible" => ('backup_enabled:eq:true')}},
               :order => 3
           }
@@ -353,7 +353,7 @@ attribute 'backup_number_to_keep',
           :description => 'The number of backups to keep',
           :format => {
               :help => "This integer value will be used decide how many old backups to keep while deleting previous backups.",
-              :category => '8.Solr Backup',
+              :category => '9.Solr Backup',
               :filter => {"all" => {"visible" => ('backup_enabled:eq:true')}},
               :order => 4
           }
@@ -564,7 +564,7 @@ attribute 'merge_metrics',
   :description => 'Merge Metrics to be displayed in Medusa Collection Dashboards',
   :default => "false",
   :format => {
-    :category => '10.Metrics for Medusa',
+    :category => '12.Metrics for Medusa',
     :help => "Set this to true to see the merge related metrics in Medusa Collection Dashboards.
               Please note that in the event it is selected to be true, it can't be reverted",
     :form => {'field' => 'checkbox'},
