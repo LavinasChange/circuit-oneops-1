@@ -311,6 +311,7 @@ attribute 'enable_fail_queries',
               :order => 32
           }
 
+
 attribute 'enable_log_delete_query_processor',
           :description  => "Enable Log Delete Query Processor",
           :default => "true",
