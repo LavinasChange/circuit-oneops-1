@@ -1118,25 +1118,25 @@ module SolrCollection
       # do not have this feature. So, check for jar version and add it only when solr_custom_component_version is >=0.0.3
       if node["enable_log_delete_query_processor"] == "true" and node["solr_custom_component_version"] != '0.0.1' and node["solr_custom_component_version"] != '0.0.2'
         log_delete_query_processor = {
-              "4_LogDeleteQuery" => {
-              "parent_elem_path" => "config/updateRequestProcessorChain",
-              "parent_elem_attrs" => {
-                  "name" => "custom"
-              },
-              "elem_name" => "processor",
-              "attr_name" => "class",
-              "attr_value" => "com.walmart.strati.search.solr.LogDeleteQueryProcessorFactory",
-              "add_after_attr_name" => "class",
-              "add_after_attr_value" => "solr.DistributedUpdateProcessorFactory",
-              "elem_children" => [
-                  {
-                      "elem_name" => "bool",
-                      "attr_name" => "name",
-                      "attr_value" => "logDeleteQuery",
-                      "elem_value" => "true"
-                  }
-              ]
-          }
+            "4_LogDeleteQuery" => {
+                "parent_elem_path" => "config/updateRequestProcessorChain",
+                "parent_elem_attrs" => {
+                    "name" => "custom"
+                },
+                "elem_name" => "processor",
+                "attr_name" => "class",
+                "attr_value" => "com.walmart.strati.search.solr.LogDeleteQueryProcessorFactory",
+                "add_after_attr_name" => "class",
+                "add_after_attr_value" => "solr.DistributedUpdateProcessorFactory",
+                "elem_children" => [
+                    {
+                        "elem_name" => "bool",
+                        "attr_name" => "name",
+                        "attr_value" => "logDeleteQuery",
+                        "elem_value" => "true"
+                    }
+                ]
+            }
         }
         props_map.merge!(log_delete_query_processor)
         Chef::Log.info("Log Delete Query Processor is enabled")
