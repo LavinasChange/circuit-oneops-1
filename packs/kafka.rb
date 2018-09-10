@@ -473,9 +473,9 @@ resource "jolokia_proxy",
   {:from => 'kafka', :to => 'hostname'},
   {:from => 'kafka', :to => 'certificate'},
   {:from => 'kafka', :to => 'keystore'},
-  {:from => 'gclogcleanup-job', :to => 'kafka'}
+  {:from => 'gclogcleanup-job', :to => 'kafka'},
   {:from => 'keystore', :to => 'certificate'},
-  {:from => 'os', :to => 'compute'},
+  {:from => 'os', :to => 'compute'}
   
 ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
