@@ -9,6 +9,10 @@ grouping 'default',
          :access => 'global',
          :packages => ['base', 'mgmt.catalog', 'mgmt.manifest', 'catalog', 'manifest', 'bom']
 
+grouping 'bom',
+         :access => "global",
+         :packages => [ 'bom' ]
+
 attribute 'tenants',
   :description => "Tenants",
   :required => 'required',
@@ -35,7 +39,7 @@ attribute 'show-advanced-config',
 attribute 'service-mesh-version',
           :description => 'Service Mesh Version',
           :required => 'required',
-          :default => '1.7.1',
+          :default => '1.11.0',
           :format => {
               :important => true,
               :help => 'Service mesh version, do not change if not sure what value to use',
@@ -80,14 +84,15 @@ attribute 'use-overridden-yaml',
             :order    => 7
           }
 
-attribute 'config-yaml',
-		  :description => "Complete Config YAML",
-		  :data_type => "text",
-		  :format => {
-		    :help => 'Complete config in yaml format, this will override any other config',
-		    :category => '2.Advanced',
-		    :filter   => {'all' => {'visible' => 'show-advanced-config:eq:true && use-overridden-yaml:eq:true'}},
-		    :order => 8
-  		  }
+attribute 'overridden-config-yaml',
+          :description => "Complete Config YAML",
+          :data_type => "text",
+          :format => {
+              :help => 'Complete config in yaml format, this will override any other config',
+              :category => '2.Advanced',
+              :filter   => {'all' => {'visible' => 'show-advanced-config:eq:true && use-overridden-yaml:eq:true'}},
+              :order => 8
+          }
 
 recipe "restart-service-mesh-process", "Restart Service Mesh"
+recipe "lookup-service-mesh-yaml", "Lookup Service Mesh yaml"
