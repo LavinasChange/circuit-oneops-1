@@ -29,13 +29,14 @@ when /azureobjectstore/
     Chef::Log.fatal('Exiting secrets-client component is missing from the design.')
     raise
   end
+  ci_attr_cms = node[:workorder][:config]
   ci_attr = node[:workorder][:rfcCi][:ciAttributes]
   config = {
     :provider                   => 'Azure',
     :storage_account_id         => ci_attr[:storage_id],
     :client_id                  => ci_attr[:client_id],
-    :tenant_id                  => ci_attr_cloud[:tenant_id],
-    :proxy                      => ci_attr_cloud[:proxy]
+    :tenant_id                  => ci_attr_cms[:tenant_id],
+    :proxy                      => ci_attr_cms[:proxy]
   }
 end
 
