@@ -5,12 +5,12 @@ require 'json'
 cloud_name = node[:workorder][:cloud][:ciName]
 Chef::Log::info("Cloud name is " + cloud_name)
 
-### verify java and jar command, if not exist, fail deploy
-ruby_block "verify_java_and_jar_available" do
+### verify java and unzip command, if not exist, fail deploy
+ruby_block "verify_java_and_unzip_available" do
   block do
-    `which java && which jar`
+    `which java && which unzip`
     if !$?.success?
-      raise "Error: command java or jar is not available"
+      raise "Error: command java or unzip is not available"
     end
   end
 end
@@ -55,20 +55,20 @@ allTenants.each do |a_tenant|
         Chef::Log.error("Incomplete tenant information was provided, cannot proceed with deployment. Please provide at-least application-key and environment-name for a tenant.")
         exit 1
     end
-    
+
     tenantConfigs = tenantConfigs + "  - appKey: #{a_tenant[0]}" + "\n"
     tenantConfigs = tenantConfigs + "    envName: #{a_tenant[1]}\n"
-    
+
     if a_tenant.length > 2
         Chef::Log::info("Got ingress address in the tenant input text")
         tenantConfigs = tenantConfigs + "    ingressAddr: #{a_tenant[2]}\n"
     end
-    
+
     if a_tenant.length > 3
         Chef::Log::info("Got ecv uri in the tenant input text")
         tenantConfigs = tenantConfigs + "    ecvUri: #{a_tenant[3]}\n"
     end
-    
+
     stratiAppName = "#{a_tenant[0]}-Mesh"
 end
 
@@ -99,14 +99,15 @@ remote_file "#{serviceMeshRootDir}/soa-linkerd-#{meshVersion}.jar" do
   group 'root'
   mode '0777'
   action :create_if_missing
-  notifies :run, "bash[unpack_yaml_from_jar]", :immediately
+  notifies :run, "bash[unzip_yaml_from_jar]", :immediately
 end
 
-bash 'unpack_yaml_from_jar' do
+bash 'unzip_yaml_from_jar' do
   code <<-EOH
       cd #{serviceMeshRootDir}
       rm -f linkerd-sr-yaml.erb
-      jar -xf soa-linkerd-#{meshVersion}.jar linkerd-sr-yaml.erb
+      unzip soa-linkerd-#{meshVersion}.jar linkerd-sr-yaml.erb
+      echo
   EOH
   user "root"
   notifies :run, "ruby_block[verify_yaml_template_exist_or_not]", :immediately
