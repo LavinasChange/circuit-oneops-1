@@ -14,6 +14,8 @@ end
 #Determine which particular storage this volume depends on
 storage,device_maps = get_storage(node)
 
+
+
 Chef::Log.info("Device map: #{device_maps}")
 
 #No DependsOn storage, assuming it's an ephemeral disk - add it exit
@@ -22,34 +24,39 @@ if device_maps.empty?
   #Execute PS script to add ephemeral disk (set online, initialize, create partition and format volume)
   arg_list = "-Command \"& {#{ps_volume_script} -DriveLetter #{mount_point} }\" "
   cmd = "#{ps_script} -ExeFile 'powershell.exe' -ArgList '#{arg_list}' "
+  Chef::Log.info("cmd: #{cmd}")
 
   Chef::Log.info("cmd:"+cmd)
   powershell_script "Add-Ephemeral-Storage" do
     code cmd
   end
-  
+
   return
 end
 
+include_recipe "shared::set_provider_new"
 
-include_recipe "shared::set_provider"
-
-token_class = node[:workorder][:services][:compute][cloud_name][:ciClassName].split(".").last.downcase
+token_class = node[:provider_class]
 provider = node[:iaas_provider]
 storage_provider = provider
-storage_provider = node[:storage_provider] if token_class =~ /rackspace|ibm/
-instance_id = node[:workorder][:payLoad][:ManagedVia][0][:ciAttributes][:instance_id]
-compute = provider.servers.get(instance_id)
-Chef::Log.info("instance_id: "+instance_id)
-
 
 ############################################
 ###         1. Attach storage            ###
 ############################################
 #Azure storage treated differently
-if storage_provider =~ /azure/
-  include_recipe "azuredatadisk::attach"
+if node["provider_class"] == 'azure'
+  obj_storage = VolumeComponent::Storage.new(node, storage, device_maps)
+  obj_storage.set_provider_data_all
+  storage_devices = obj_storage.storage_devices
+
+  storage_devices.each do |storage_device|
+    storage_device.attach
+  end
 else
+  storage_provider = node[:storage_provider] if token_class =~ /rackspace|ibm/
+  instance_id = node[:workorder][:payLoad][:ManagedVia][0][:ciAttributes][:instance_id]
+  compute = provider.servers.get(instance_id)
+  Chef::Log.info("instance_id: "+instance_id)
   #iterating through all storage slices
   device_maps.each do |dev_vol|
     vol_id = dev_vol.split(":")[0]
@@ -148,12 +155,18 @@ device_maps.each do |dev_vol|
   vol_id = dev_vol.split(":")[0]
   Chef::Log.info("vol_id: "+vol_id)
 
-  vol = nil
-  vol = storage_provider.volumes.get vol_id
-
-  #Execute PS script to add persistent disk (set online, initialize, create partition and format volume)
-  storage_size = vol.size
-  arg_list = "-Command \"& {#{ps_volume_script} -DriveLetter #{mount_point} -vol_id #{vol_id} -storage_size #{storage_size} }\" "
+  if node["provider_class"] == 'azure'
+    resource_group_name = AzureBase::ResourceGroupManager.new(node).rg_name
+    managed_disks  = provider.managed_disks(resource_group: resource_group_name)
+    disk = managed_disks.detect{ |datadisk| (datadisk.name == vol_id) }
+    storage_size = disk.disk_size_gb
+    arg_list = "-Command \"& {#{ps_volume_script} -DriveLetter #{mount_point} -storage_size #{storage_size} }\" "
+  else
+    vol = nil
+    vol = storage_provider.volumes.get vol_id
+    storage_size = vol.size
+    arg_list = "-Command \"& {#{ps_volume_script} -DriveLetter #{mount_point} -vol_id #{vol_id} -storage_size #{storage_size} }\" "
+  end
   cmd = "#{ps_script} -ExeFile 'powershell.exe' -ArgList '#{arg_list}' "
 
   Chef::Log.info("cmd:"+cmd)

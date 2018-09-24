@@ -32,7 +32,8 @@ module AzureCompute
       @image_id = node['image_id'].split(':')
       @oosize_id = node[:oosize_id]
       @ip_type = node['ip_type']
-      @platform = @compute_service['ostype'].include?('windows') ? 'windows' : 'linux'
+      @platform = node[:ostype].downcase.include?('windows') ? 'windows' : 'linux'
+
       @platform_ci_id = node['workorder']['box']['ciId']
       @compute_ci_id = node['workorder']['rfcCi']['ciId']
       @tags = {}
@@ -66,7 +67,7 @@ module AzureCompute
       @availability_set_response = @compute_client.availability_sets.get(@resource_group_name, @availability_set_name)
 
       @size_id = get_vm_size_id(node)
-      
+
       @accelerated_networking = if (defined?(node[:workorder][:rfcCi][:ciAttributes][:accelerated_flag]))
         node[:workorder][:rfcCi][:ciAttributes][:accelerated_flag]
       else
@@ -124,6 +125,7 @@ module AzureCompute
       vm_hash[:storage_account_name] = @storage_profile.get_managed_osdisk_name if @availability_set_response.sku_name.eql? 'Aligned'
       vm_hash[:storage_account_name] = @storage_profile.get_storage_account_name if @availability_set_response.sku_name.eql? 'Classic'
 
+      customimage_resource_group = @compute_service['resource_group'].sub("mrg","img")
 
       # Fast image logic
       OOLog.info("FAST_IMAGE_Flag: #{@FAST_IMAGE}, TESTING_MODE_FLAG: #{@TESTING_MODE}")
@@ -137,7 +139,6 @@ module AzureCompute
           client.subscription_id = @creds[:subscription_id]
 
           # get image list
-          customimage_resource_group = @compute_service['resource_group'].sub("mrg","img")
           images                     = client.resource_groups.list_resources(customimage_resource_group)
 
           # find fast image
@@ -152,12 +153,14 @@ module AzureCompute
           # ostype                    # must be in format of "type-major.minor"
           # )
           fast_image = get_image(images, nil, @FAST_IMAGE, @TESTING_MODE, nil, false, @ostype)
-          
+
         rescue MsRestAzure::AzureOperationError => e
           OOLog.debug("Error Body: #{e.body}")
           OOLog.fatal('Error getting list of images')
         end
       end
+
+
 
       # if not fast do old way
       if !fast_image.nil?
@@ -169,7 +172,7 @@ module AzureCompute
       elsif @image_id[0].eql? 'Custom'
         image_ref           = "/subscriptions/#{@compute_service['subscription']}/resourceGroups/#{customimage_resource_group}/providers/Microsoft.Compute/images/#{@image_id[2]}"
         vm_hash[:image_ref] = image_ref
-        pattern             = /[a-zA-Z]{1,20}-#{ostype.gsub(/\./, "")}-\d{4}-v\d{8}-\d{4}/i
+        pattern             = /[a-zA-Z]{1,20}-#{@ostype.gsub(/\./, "")}-\d{4}-v\d{8}-\d{4}/i
         @fast_image_flag    = (@image_id[2] =~ pattern)
 
         OOLog.info('image ref: ' + image_ref )
@@ -189,13 +192,13 @@ module AzureCompute
       # os profile values
       vm_hash[:username] = @initial_user
 
-      if @compute_service[:ostype].include?('windows')
-        vm_hash[:password] = 'On3oP$'
+      if @platform == 'windows'
+        vm_hash[:password] = get_random_password
       else
         vm_hash[:disable_password_authentication] = true
-        vm_hash[:ssh_key_data] = @keypair_service[:ciAttributes][:public]
       end
 
+      vm_hash[:ssh_key_data] = @keypair_service[:ciAttributes][:public]
       # network profile values
       nic_id = @network_profile.build_network_profile(@compute_service[:express_route_enabled],
                                                       @compute_service[:resource_group],
@@ -212,7 +215,9 @@ module AzureCompute
       @private_ip = @network_profile.private_ip
       # create the virtual machine
       begin
-        @virtual_machine_lib.create_update(vm_hash)
+        virtual_machine = @virtual_machine_lib.create_update(vm_hash)
+        @virtual_machine_lib.create_virtual_machine_extension(vm_hash) if @platform == 'windows'
+        virtual_machine
 
       rescue MsRestAzure::AzureOperationError => e
         OOLog.debug("Error Body: #{e.body}")
@@ -344,6 +349,13 @@ module AzureCompute
       sizes_arr.last
     end
 
-    private :get_security_group_id, :get_vm_size_id, :pick_latest_vm_size
+    def get_random_password
+      require 'securerandom'
+      password = SecureRandom.base64(15)
+      OOLog.info("secure password: #{password}")
+      password
+    end
+
+    private :get_security_group_id, :get_vm_size_id, :pick_latest_vm_size, :get_random_password
   end
 end

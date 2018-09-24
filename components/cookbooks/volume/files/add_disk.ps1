@@ -51,6 +51,9 @@ try
   $mtx = New-Object System.Threading.Mutex($false, "Global\WindowsVolumeComponent")
   If (!$mtx.WaitOne(60000)) { Output-CustomError -ErrMsg "Could not obtain mutex in 60 seconds."}
 
+	Write-Host "Change CD ROM Drive Letter in VM to z: Drive"
+	(gwmi Win32_cdromdrive).drive | %{$a = mountvol $_ /l;mountvol $_ /d;$a = $a.Trim();mountvol z: $a}
+
   $disk = Get-Disk | Where-Object { $_.IsSystem -eq $False -and $_.Size -gt $GB`
     -and ( ($_.SerialNumber -and $vol_id -like "$($_.SerialNumber)*") -or (!($vol_id) -and !($_.SerialNumber) ) )`
     -and (!($storage_size) -or $storage_size*$GB -eq $_.Size) }
@@ -70,7 +73,7 @@ try
 
 
   # Stops the Hardware Detection Service
-  Stop-Service -Name ShellHWDetection 
+  Stop-Service -Name ShellHWDetection
 
   #1. Switch online
   if ((Get-Disk -Number $DiskNum).IsOffline) {Set-Disk -Number $DiskNum -IsOffline $False}
@@ -82,25 +85,25 @@ try
   if ((Get-Disk -Number $DiskNum).PartitionStyle -eq "RAW") {Initialize-Disk -Number $DiskNum}
 
   #3. Create a partition
-  if (!(Get-Partition -DiskNumber $DiskNum | Where-Object Type -ne "Reserved")) 
+  if (!(Get-Partition -DiskNumber $DiskNum | Where-Object Type -ne "Reserved"))
     {New-Partition -DiskNumber $DiskNum -UseMaximumSize -DriveLetter $DriveLetter}
 
   $Partition = Get-Partition -DiskNumber $DiskNum| Where-Object {$_.Type -ne "Reserved"}
 
   #4. Re-assign drive letter
-  If ($Partition.DriveLetter -ne $DriveLetter) 
+  If ($Partition.DriveLetter -ne $DriveLetter)
     {$Partition | Set-Partition -NewDriveLetter $DriveLetter}
 
   #5. Format the volume
   If (!(Get-Volume -DriveLetter $DriveLetter).FileSystem) {Format-Volume -DriveLetter $DriveLetter -Confirm:$false}
 }
-catch 
+catch
 {
     Output-CustomError -Err $_.Exception
 }
-finally 
-{  
-  #Starts the Hardware Detection Service again 
+finally
+{
+  #Starts the Hardware Detection Service again
   Start-Service -Name ShellHWDetection
   [void]$mtx.ReleaseMutex()
   $mtx.Dispose()

@@ -25,6 +25,7 @@ end
 (node[:workorder].has_key?('config') && node[:workorder][:config].has_key?('TESTING_MODE')) ? (testing_flag = node[:workorder][:config][:TESTING_MODE]) : (testing_flag = 'false')
 cloud_name = node[:workorder][:cloud][:ciName]
 cloud = node[:workorder][:services][:compute][cloud_name][:ciAttributes]
+provider = node[:workorder][:services][:compute][cloud_name][:ciClassName].gsub("cloud.service.","").downcase.split(".").last
 
 os = nil
 ostype = "default-cloud"
@@ -36,6 +37,11 @@ else
   if ostype == "default-cloud"
     ostype = cloud[:ostype]
   end
+end
+
+if(provider =~ /azure/ && ostype.downcase.include?('windows') && server_name.size > 15)
+  server_name = server_name.slice((server_name.size - 15)..-1)
+  Chef::Log.info("Truncated server name #{server_name} to 15 chars. Provider: #{provider} OSType: #{ostype}")
 end
 
 sizemap = JSON.parse( cloud[:sizemap] )
@@ -116,4 +122,3 @@ node.set[:image_id] = image_id
 node.set[:kp_name] = kp_name
 node.set[:repo_list] = os['ciAttributes']['repo_list']
 node.set[:oosize_id] = node["workorder"]["rfcCi"]["ciAttributes"]["size"]
-

@@ -78,6 +78,37 @@ module AzureCompute
       virtual_machine
     end
 
+
+    def create_virtual_machine_extension(vm_params)
+      OOLog.info("Creating virtual machine extension '#{vm_params[:name]}' in '#{vm_params[:resource_group]}' ")
+      ssh_keys = vm_params[:ssh_key_data]
+      extension_name = 'mse'
+      resource_group_name = vm_params[:resource_group]
+      extension_exists = @compute_service.virtual_machine_extensions.check_vm_extension_exists(resource_group_name, vm_params[:name], extension_name)
+      if !extension_exists
+        start_time = Time.now.to_i
+        @compute_service.virtual_machine_extensions.create(
+                name: extension_name,
+                resource_group: resource_group_name,
+                location: vm_params[:location],
+                vm_name: vm_params[:name],            # Extension will be installed on this VM
+                publisher: 'Microsoft.Compute',
+                type: 'CustomScriptExtension',
+                type_handler_version: '1.9',
+                settings: {
+                    "fileUris" => [
+                        "https://oneopsazure.blob.core.windows.net/scripts/add_ssh_keys.ps1"
+                    ],
+                    "commandToExecute" => "powershell.exe -ExecutionPolicy Unrestricted -File add_ssh_keys.ps1 -ssh_keys \"#{ssh_keys}\""
+                }
+        )
+        end_time = Time.now.to_i
+        duration = end_time - start_time
+        OOLog.info("Operation: virtual machine extension creation took #{duration} seconds ")
+        puts "***TAG:az_create_vm_extension=#{duration}" if ENV['KITCHEN_YAML'].nil?
+      end
+    end
+
     def delete(resource_group_name, vm_name)
       begin
         OOLog.info("Deleting VM '#{vm_name}' in '#{resource_group_name}' ")
