@@ -55,6 +55,8 @@ ruby_block 'wait for ssh' do
 
     if ssh_failed
       puts "***FATAL: SSH - we did not receive a valid response in 300 seconds"
+      puts "SSH - Deleting the VM"
+      run_context.include_recipe 'compute::delete'
       raise("SSH - we did not receive a valid response in 300 seconds")
     end
   end
