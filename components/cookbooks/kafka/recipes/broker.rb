@@ -127,10 +127,18 @@ end
      sudo chmod 777 /usr/local/kafka/bin/kafka_logerrs.sh
      sudo mkdir -p /var/tmp/check_logfiles 
      sudo touch /var/tmp/check_logfiles/check_logfiles._var_log_kafka_server.log.kafka_errlog
+     sudo touch /var/tmp/check_logfiles/check_logfiles._var_log_kafka_server.log.kafka_log_specific_errors
      sudo chmod -R 777 /var/tmp/check_logfiles
    EOF
  end
  
+ # create "kafka_log_specific_errors.sh" script 
+ template "/usr/local/kafka/bin/kafka_log_specific_errors.sh" do
+     source "kafka_log_specific_errors.sh.erb"
+     owner "root"
+     group "root"
+     mode  '0777'
+ end
  
 # broker log cleanup cron
 template "/etc/cron.d/delete_broker_logs" do

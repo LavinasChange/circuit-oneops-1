@@ -1,0 +1,15 @@
+#!/bin/bash
+
+OUTOFMEMORY="OutOfMemoryError"
+ZOMBIECONTROLLER="Cached\szkVersion.*not\sequal\sto\sthat\sin\szookeeper,\sskip\supdating\sISR"
+ALLLOGDIRSFAILED="Shutdown\sbroker\sbecause\sall\slog\sdirs\sin.*have\sfailed"
+
+ERRORPATTERN="$OUTOFMEMORY|$ZOMBIECONTROLLER|$ALLLOGDIRSFAILED"
+
+if [ $# -gt 0 ]; then
+   ERRORPATTERN=$1
+fi
+ 
+klogerrs="$(/opt/nagios/libexec/check_logfiles --noprotocol --tag=kafka_log_specific_errors --logfile=/var/log/kafka/server.log --criticalpattern=${ERRORPATTERN} | cut -d\| -f2 | sed 's/ /\n/g' | grep criticals | cut -d= -f2)"
+ 
+echo {\"kafka_log_specific_errors\": $klogerrs}
