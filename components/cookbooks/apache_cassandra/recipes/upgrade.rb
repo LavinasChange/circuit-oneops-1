@@ -40,14 +40,7 @@ version_upgrade_check = Gem::Version.new(current_version) <=> Gem::Version.new(n
 
 puts "version_upgrade_check = #{version_upgrade_check}"
 
-if version_upgrade_check == 1
-    message = "Version down grade is not supported."
-	puts "***FAULT:FATAL=" + message
-	puts "*************** #{message} ***********"
-    e = Exception.new("no backtrace")
-    e.set_backtrace("")
-    raise e
-elsif version_upgrade_check == 0
+if version_upgrade_check == 0
 	puts "******* No version change hence skipping upgrade *****"
 	Chef::Log.error("No version change hence skipping upgrade")
 	return

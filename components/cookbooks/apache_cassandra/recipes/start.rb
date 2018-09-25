@@ -12,9 +12,8 @@ service "cassandra" do
 end
 
 ruby_block "cassandra_running" do
-  Chef::Resource::RubyBlock.send(:include, Cassandra::Util)
   block do
-    if !cassandra_running
+    if !Cassandra::Util.cassandra_running
         puts "***FAULT:FATAL=Cassandra isn't running"
         e = Exception.new("no backtrace")
         e.set_backtrace("")

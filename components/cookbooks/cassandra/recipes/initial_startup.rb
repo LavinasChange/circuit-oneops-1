@@ -60,7 +60,7 @@ else
   end
 
   # stop and cleanup
-  execute "service cassandra stop; pkill -9f jsvc; true"
+  execute "service cassandra stop; true"
   
   ruby_block "startup" do
     Chef::Resource::RubyBlock.send(:include, Cassandra::Util)
@@ -86,9 +86,8 @@ else
   end
 
   ruby_block "cassandra_running" do
-    Chef::Resource::RubyBlock.send(:include, Cassandra::Util)
     block do
-      if !cassandra_running
+      if !Cassandra::Util.cassandra_running
           puts "***FAULT:FATAL=Cassandra isn't running on #{ip}"
           e = Exception.new("no backtrace")
           e.set_backtrace("")
