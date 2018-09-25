@@ -624,23 +624,9 @@ include_recipe "compute::ssh_port_wait"
 ruby_block 'handle ssh port closed' do
   block do
     if node[:ssh_port_closed]
-      Chef::Log.error("ssh port closed after 5min, dumping console log")
+      Chef::Log.error("ssh port closed after 5min")
       puts "SSH - Deleting the VM"
       run_context.include_recipe 'compute::delete'
-      begin
-        console_log = server.console.body
-        console_log["output"].split("\n").each do |row|
-          case row
-          when /IP information for eth0... failed|Could not retrieve public key from instance metadata/
-            puts "***FAULT:KNOWN=#{row}"
-          else
-            exit_with_error "SSH port not open on VM"
-          end
-          Chef::Log.info("console-log:" +row)
-        end
-      rescue Exception => e
-        Chef::Log.error("could not dump console-log. exception: #{e.inspect}")
-      end
       exit_with_error "ssh port closed after 5min"
     end
   end
