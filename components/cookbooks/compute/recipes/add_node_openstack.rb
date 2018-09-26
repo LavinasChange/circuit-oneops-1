@@ -625,8 +625,10 @@ ruby_block 'handle ssh port closed' do
   block do
     if node[:ssh_port_closed]
       Chef::Log.error("ssh port closed after 5min")
-      puts "SSH - Deleting the VM"
-      run_context.include_recipe 'compute::delete'
+      if rfcCi["rfcAction"] == "add" || rfcCi["rfcAction"] == "replace"
+        puts "SSH - Deleting the VM"
+        run_context.include_recipe 'compute::delete'
+      end
       exit_with_error "ssh port closed after 5min"
     end
   end
