@@ -223,7 +223,7 @@ current_cloud_id = '<%= @current_cloud_id %>'
 # The list of "raw" stats we want
 memcached_stats = ['bytes', 'curr_connections', 'curr_items', 'limit_maxbytes']
 # The list of stats for which we want delta values (note--these don't have to match the stats list)
-memcached_delta_stats = ['cmd_get', 'cmd_set', 'evictions', 'get_hits', 'get_misses']
+memcached_delta_stats = ['cmd_get', 'cmd_set', 'evictions', 'get_hits', 'get_misses', 'cmd_touch']
 
 ms = MemcacheStats.new('localhost', '<%= @memcached_port %>')
 ms.pstore_file = "graphite_memcached.pstore"
