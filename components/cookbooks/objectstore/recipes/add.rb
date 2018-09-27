@@ -35,8 +35,7 @@ when /azureobjectstore/
     :provider                   => 'Azure',
     :storage_account_id         => ci_attr[:storage_id],
     :client_id                  => ci_attr[:client_id],
-    :tenant_id                  => ci_attr_cms[:tenant_id],
-    :proxy                      => ci_attr_cms[:proxy]
+    :tenant_id                  => ci_attr_cms[:tenant_id]
   }
 end
 
