@@ -1,7 +1,5 @@
 include_recipe "apache_cassandra::validate_config"
 
-#include_recipe "apache_cassandra::python_install"
-
 node.default[:cassandra_home] = "/app/cassandra"
 cassandra_current = "#{node[:cassandra_home]}/current"
 puts "cassandra_current = #{cassandra_current}"

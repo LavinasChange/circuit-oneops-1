@@ -172,7 +172,7 @@ module Cassandra
         value.each do |c|
           puts c[:ciName] + " : "+c["ciAttributes"]["private_ip"]
         end
-        sorted_computes = value.sort_by {|obj| obj.ciName}
+        sorted_computes = value.sort_by {|obj| obj.ciName.scan(/\d+/).last.to_i}
         if value.size > 2
           slected_computes = sorted_computes.first(2)
         else
@@ -187,7 +187,7 @@ module Cassandra
     end
 
     #Check if the cassandra is running, allow #seconds to start running
-    def cassandra_running(seconds=120)
+    def self.cassandra_running(seconds=120)
       begin
         Timeout::timeout(seconds) do
           running = false
@@ -209,11 +209,13 @@ module Cassandra
     end
  
     def port_open?(ip, port)
+      sleep_time = 5
+      Chef::Log.info("Check if port #{port} open on #{ip}")
       begin
         cmd = "service cassandra status 2>&1"
         result  = `#{cmd}`
         if $? == 0
-          Chef::Log.info("Check if port #{port} open on #{ip}")
+          Chef::Log.info(".")
           TCPSocket.new(ip, port).close
           return true
         else
@@ -223,7 +225,9 @@ module Cassandra
           raise e         
         end
       rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH, SocketError
-        sleep 5
+        sleep sleep_time
+        #exponential backoff until 1 minute
+        sleep_time = [sleep_time * 2, 60].min
         retry
       end
     end
@@ -398,7 +402,7 @@ module Cassandra
     end
     yaml = YAML::load_file('/opt/cassandra/conf/cassandra.yaml')
     yaml['seed_provider'][0]['parameters'][0]['seeds'].split(',').each do |ip|
-      cmd = "/opt/cassandra/bin/cqlsh --no-color -e 'CONSISTENCY ONE; SELECT gc_grace_seconds FROM #{table}' #{auth} #{ip} | grep -o '[0-9]*\$' | awk '\$1>0{print \$1}' | sort -n | head -1"
+      cmd = "/opt/cassandra/bin/cqlsh --no-color -e 'CONSISTENCY ONE; SELECT keyspace_name,gc_grace_seconds FROM #{table}' #{auth} #{ip} | grep -v 'reaper_db' | grep -o '[0-9]*\$' | awk '\$1>0{print \$1}' | sort -n | head -1"
       Chef::Log.info("Running #{cmd}")
       r = `#{cmd}`
       Chef::Log.info("min gc grace command returned #{r}")
@@ -501,7 +505,7 @@ module Cassandra
     end
   end
 
-  def node_joining(ip)
+  def self.node_joining(ip)
     result = `/opt/cassandra/bin/nodetool -h #{ip} netstats | grep Mode`
     if $? != 0
         Chef::Log.error("nodetool command on #{ip} failed")

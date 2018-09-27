@@ -15,6 +15,19 @@ availability_mode = node.workorder.box.ciAttributes.availability
 
 cassandra_home = "#{node.default[:cassandra_home]}/current"
 
+#Wait and quit if the node is currently joining.
+#The inductor has a 2 hour timeout.  If bootstrapping takes longer
+#than the timeout, the add recipe will retry.  We want to wait as
+#long as we can for the node to join without failing.
+if Cassandra::Util.cassandra_running(5) && Cassandra::Util.node_joining(private_ip)
+  Chef::Log.info("Node is already joining the ring.  Waiting for it to finish.")
+  while Cassandra::Util.node_joining(private_ip) do
+    sleep 60
+  end
+  Chef::Log.info("Node isn't joining anymore.")
+  return
+end
+
 #Single availability
 service 'cassandra' do
   action [ :enable, :start ]
@@ -33,7 +46,7 @@ ruby_block "cluster_normal" do
   Chef::Resource::RubyBlock.send(:include, Cassandra::Util)
   block do
     while(!cluster_normal?(node)) do
-      Chef::Log.info("wait while any of existing node is moving/joining/leaving")
+      Chef::Log.info("Waiting for existing nodes to stop moving/joining/leaving")
       sleep 30
     end
   end
@@ -65,7 +78,7 @@ end
 ruby_block "cassandra_running" do
   Chef::Resource::RubyBlock.send(:include, Cassandra::Util)
   block do
-    unless cassandra_running
+    unless Cassandra::Util.cassandra_running
       puts "***FAULT:FATAL=Cassandra isn't running on #{private_ip}"
       e = Exception.new("no backtrace")
       e.set_backtrace("")
