@@ -25,7 +25,7 @@ end
 (node[:workorder].has_key?('config') && node[:workorder][:config].has_key?('TESTING_MODE')) ? (testing_flag = node[:workorder][:config][:TESTING_MODE]) : (testing_flag = 'false')
 cloud_name = node[:workorder][:cloud][:ciName]
 cloud = node[:workorder][:services][:compute][cloud_name][:ciAttributes]
-provider = node[:workorder][:services][:compute][cloud_name][:ciClassName].gsub("cloud.service.","").downcase.split(".").last
+provider = node[:workorder][:services][:compute][cloud_name][:ciClassName].split(".").last.downcase
 
 os = nil
 ostype = "default-cloud"
