@@ -17,7 +17,7 @@ attribute 'version',
     :category => '1.Global',
     :help => 'Version of the mirrormaker',
     :order => 1,
-    :form => {'field' => 'select', 'options_for_select' => [['0.10.1.0', '0.10.1.0'],['1.1.1-beta', '1.1.1']]}
+    :form => {'field' => 'select', 'options_for_select' => [['0.10.1.0', '0.10.1.0'],['1.1.1', '1.1.1']]}
   }
 
 attribute 'log_dir',
