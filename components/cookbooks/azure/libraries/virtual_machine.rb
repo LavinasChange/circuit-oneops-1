@@ -209,16 +209,14 @@ module AzureCompute
     def encoded_script(ssh_keys)
       require 'base64'
       script = <<EOH
-      $ssh_keys = "#{ssh_keys}"
       $username = "oneops"
-      $random_password = #{get_random_password}
-      Invoke-Command -ScriptBlock {net user $username ""$random_password"" /add}
+      Invoke-Command -ScriptBlock {net user $username "#{get_random_password}"  /add}
       Invoke-Command -ScriptBlock {net localgroup Administrators $username /add}
       $config_file = "C:/cygwin64/home/$($username)/.ssh/authorized_keys"
       if(!(Test-Path -Path $config_file)) {
         New-Item $config_file -type file -force
       }
-      Add-Content $config_file -Value $ssh_keys
+      Add-Content $config_file -Value "#{ssh_keys}"
       Invoke-Command -ScriptBlock {icacls "C:/cygwin64/home/$($username)" /setowner $username /T /C /q}
       Invoke-Command -ScriptBlock {net user azure /logonpasswordchg:yes}
 EOH
@@ -230,6 +228,7 @@ EOH
     def get_random_password
       require 'securerandom'
       password = SecureRandom.base64(15)
+      password = password[0..13] if password.size > 14
       OOLog.info("secure password: #{password}")
       password
     end
