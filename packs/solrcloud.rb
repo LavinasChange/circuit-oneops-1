@@ -169,9 +169,9 @@ resource "solrcloud",
     'solr_opts_params' => '["solr.autoSoftCommit.maxTime=15000", "solr.autoCommit.maxTime=60000", "solr.directoryFactory=solr.MMapDirectoryFactory", "socketTimeout=30000", "connTimeout=30000", "maxConnectionsPerHost=100", "distribUpdateSoTimeout=60000", "distribUpdateConnTimeout=40000", "solr.jetty.threads.max=3000"]',
     'skip_solrcloud_comp_execution' => 'false',
     'enable_cinder' => 'true',
-    'solr_custom_component_version' => '0.0.3',
+    'solr_custom_component_version' => '0.0.8',
     'solr_api_timeout_sec' => '300',
-    'solr_monitor_version' => '2.0.7',
+    'solr_monitor_version' => '2.0.8',
     'custom_metric_yaml' => ''
   },
 
@@ -337,7 +337,20 @@ resource "secgroup",
   :cookbook => "oneops.1.secgroup",
   :design => true,
   :attributes => {
-    "inbound" => '[ "22 22 tcp 0.0.0.0/0","8080 8080 tcp 0.0.0.0/0","8983 8983 tcp 0.0.0.0/0","13000 14000 tcp 0.0.0.0/0" ]'
+    "inbound" => '[
+          "22 22 tcp 0.0.0.0/0",
+          "80 80 tcp 0.0.0.0/0",
+          "2888 2888 tcp 0.0.0.0/0",
+          "3888 3888 tcp 0.0.0.0/0",
+          "8983 8983 tcp 0.0.0.0/0",
+          "9091 9091 tcp 0.0.0.0/0",
+          "9092 9092 tcp 0.0.0.0/0",
+          "9093 9093 tcp 0.0.0.0/0",
+          "9000 9000 tcp 0.0.0.0/0",
+          "11061 11064 tcp 0.0.0.0/0",
+          "8449 8449 udp 0.0.0.0/0",
+          "13001 13001 tcp 0.0.0.0/0"
+        ]'
   },
   :requires => {
     :constraint => "1..1",

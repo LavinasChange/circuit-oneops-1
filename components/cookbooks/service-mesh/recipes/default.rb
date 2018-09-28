@@ -5,6 +5,16 @@ require 'json'
 cloud_name = node[:workorder][:cloud][:ciName]
 Chef::Log::info("Cloud name is " + cloud_name)
 
+### verify java and unzip command, if not exist, fail deploy
+ruby_block "verify_java_and_unzip_available" do
+  block do
+    `which java && which unzip`
+    if !$?.success?
+      raise "Error: command java or unzip is not available"
+    end
+  end
+end
+
 smesh_service = node[:workorder][:services][:servicemeshcloudservice]
 if !smesh_service.nil? && !smesh_service[cloud_name].nil?
   mesh_cloud_service = node[:workorder][:services][:servicemeshcloudservice][cloud_name][:ciAttributes]
@@ -26,8 +36,6 @@ directory serviceMeshRootDir do
 end
 Chef::Log::info("Service mesh root directory created successfully")
 
-linkerdConfigPath = serviceMeshRootDir + "/linkerd-sr.yaml"
-
 ### parse all tenants and make available for linkerd config template ###
 allTenants = []
   JSON.parse("#{node['service-mesh']['tenants']}").each do |l|
@@ -47,30 +55,25 @@ allTenants.each do |a_tenant|
         Chef::Log.error("Incomplete tenant information was provided, cannot proceed with deployment. Please provide at-least application-key and environment-name for a tenant.")
         exit 1
     end
-    
+
     tenantConfigs = tenantConfigs + "  - appKey: #{a_tenant[0]}" + "\n"
     tenantConfigs = tenantConfigs + "    envName: #{a_tenant[1]}\n"
-    
+
     if a_tenant.length > 2
         Chef::Log::info("Got ingress address in the tenant input text")
         tenantConfigs = tenantConfigs + "    ingressAddr: #{a_tenant[2]}\n"
     end
-    
+
     if a_tenant.length > 3
         Chef::Log::info("Got ecv uri in the tenant input text")
         tenantConfigs = tenantConfigs + "    ecvUri: #{a_tenant[3]}\n"
     end
-    
+
     stratiAppName = "#{a_tenant[0]}-Mesh"
 end
 
-template linkerdConfigPath do
-  source 'linkerd-sr-yaml.erb'
-  variables(:tenant_configs => "#{tenantConfigs}")
-end
-
-overriddenConfigYaml = node['service-mesh']['config-yaml']
-Chef::Log::info("overriddenConfigYaml config-yaml: #{overriddenConfigYaml}")
+overriddenConfigYaml = node['service-mesh']['overridden-config-yaml']
+Chef::Log::info("overriddenConfigYaml overridden-config-yaml: #{overriddenConfigYaml}")
 
 overriddenConfigPath = "#{serviceMeshRootDir}/overridden-config.yaml"
 Chef::Log::info("Going to create overridden config yaml at #{overriddenConfigPath}")
@@ -88,13 +91,59 @@ meshVersion = "#{node['service-mesh']['service-mesh-version']}"
 meshJarNexusUrl = meshRepoUrl + "/" + meshVersion + "/soa-linkerd-" + meshVersion + ".jar"
 Chef::Log::info("Service mesh artifact remote url: #{meshJarNexusUrl}")
 
+linkerdConfigPath = serviceMeshRootDir + "/linkerd-sr.yaml"
+
 remote_file "#{serviceMeshRootDir}/soa-linkerd-#{meshVersion}.jar" do
-	source meshJarNexusUrl
-	owner 'root'
-	group 'root'
-	mode '0777'
-	action :create_if_missing
+  source meshJarNexusUrl
+  owner 'root'
+  group 'root'
+  mode '0777'
+  action :create_if_missing
+  notifies :run, "bash[unzip_yaml_from_jar]", :immediately
 end
+
+bash 'unzip_yaml_from_jar' do
+  code <<-EOH
+      cd #{serviceMeshRootDir}
+      rm -f linkerd-sr-yaml.erb
+      unzip soa-linkerd-#{meshVersion}.jar linkerd-sr-yaml.erb
+      echo
+  EOH
+  user "root"
+  notifies :run, "ruby_block[verify_yaml_template_exist_or_not]", :immediately
+  action :nothing
+end
+
+ruby_block "verify_yaml_template_exist_or_not" do
+  block do
+    if(File.exists?("#{serviceMeshRootDir}/linkerd-sr-yaml.erb"))
+      Chef::Log::info("==== Generating yaml from service mesh artifact template")
+    else
+      Chef::Log::info("==== Generating yaml from oneops template")
+    end
+  end
+  notifies :create, "template[generate_yaml_from_artifact_template]", :immediately
+  notifies :create, "template[generate_yaml_from_oneops_template]", :immediately
+  action :nothing
+end
+
+template "generate_yaml_from_artifact_template" do
+  path linkerdConfigPath
+  local true
+  source "#{serviceMeshRootDir}/linkerd-sr-yaml.erb"
+  variables(:tenant_configs => "#{tenantConfigs}")
+  action :nothing
+  only_if { File.exists?("#{serviceMeshRootDir}/linkerd-sr-yaml.erb") }
+end
+
+template "generate_yaml_from_oneops_template" do
+  path linkerdConfigPath
+  source "linkerd-sr-yaml.erb"
+  variables(:tenant_configs => "#{tenantConfigs}")
+  action :nothing
+  not_if { File.exists?("#{serviceMeshRootDir}/linkerd-sr-yaml.erb") }
+end
+
 
 ### Log and rotate
 meshLogRoot = "/log/mesh"
@@ -117,6 +166,7 @@ if(node['service-mesh']['use-overridden-yaml'] == "true")
   linkerdConfigPath = overriddenConfigPath
 end
 Chef::Log::info("Final linkerd yaml path: #{linkerdConfigPath}")
+
 
 Chef::Log::info("Got addtional config as override: #{node['service-mesh']['conf-override']}")
 Chef::Log::info("Adding service-mesh initd script")

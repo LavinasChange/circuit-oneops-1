@@ -287,7 +287,7 @@ resource "fqdn",
              { "returnObject": false,
                "returnRelation": false,
                "relationAttrs":[{"attributeName":"priority", "condition":"eq", "avalue":"1"},
-                                {"attributeName":"adminstatus", "condition":"eq", "avalue":"active"}],
+                                {"attributeName":"adminstatus", "condition":"neq", "avalue":"offline"}],
                "relationName": "base.Consumes",
                "direction": "from",
                "targetClassName": "account.Cloud",
@@ -961,7 +961,7 @@ resource "service-mesh",
     'services' => 'servicemeshcloudservice'
    },
   :attributes => {
-    "service-mesh-version" => "1.7.1",
+    "service-mesh-version" => "1.11.0",
     "service-mesh-root" => "/opt/service-mesh"
   }
 

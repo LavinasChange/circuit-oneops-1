@@ -249,7 +249,6 @@ def get_storage_account_key(config)
   }
 
   connection = Faraday.new
-  connection.proxy = config['proxy']
   response = connection.send('post', login_url) do |request|
     request.headers['Content-type'] = 'application/x-www-form-urlencoded'
     request.body = post_data.nil? ? '{}' : post_data
@@ -260,7 +259,6 @@ def get_storage_account_key(config)
   token = JSON.parse(response.body)['access_token']
   storage_account_uri = "#{azure_base_management_uri}#{config['storage_account_id']}/listKeys?api-version=2017-06-01"
   connection = Faraday.new
-  connection.proxy = config['proxy']
   response = connection.send('post', storage_account_uri) do |request|
     request.headers['Content-type'] = 'application/json'
     request.headers['Authorization'] = "Bearer #{token}"

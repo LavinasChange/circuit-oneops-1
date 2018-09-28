@@ -34,27 +34,6 @@ if invalid_cluster
   raise e
 end
 
-#higher version selected?
-if actionName == 'update'
-  selected_version = node.workorder.rfcCi.ciAttributes.version
-  current_version = `/app/cassandra/current/bin/cassandra -v`
-  puts "***RESULT:node_version=" + current_version
-  puts "current_version = #{current_version}"
-  puts "selected_version = #{selected_version}"
-  Version_Change = Gem::Version.new(current_version) <=> Gem::Version.new(selected_version) 
-  puts "Version_Change = #{Version_Change}"
-  if Version_Change == 1
-    message = "Version down grade is not supported."
-    puts "***FAULT:FATAL=" + message
-    e = Exception.new("no backtrace")
-    e.set_backtrace("")
-    raise e
-  elsif  Version_Change == -1
-    Chef::Log.info("Upgrade detected. Exiting. Please run upgrade action at operations stage")
-    exit 0
-  end
-end
-
 dc_rack_map = JSON.parse(ci.ciAttributes.cloud_dc_rack_map)
 #For new cluster map of Cloud to DC:Rack must be provided
 if dc_rack_map.nil? || dc_rack_map.empty?

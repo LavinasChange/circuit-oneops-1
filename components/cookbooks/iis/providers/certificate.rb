@@ -22,7 +22,7 @@ action :import do
     thumbprint = OpenSSL::Digest::SHA1.new(cert.to_der).to_s
 
     powershell_script 'Import pfx certificate' do
-      code "certutil.exe -p #{password} -importpfx #{certificate_file}"
+      code "certutil.exe -p '#{password}' -importpfx #{certificate_file}"
       guard_interpreter :powershell_script
       not_if "if (Get-ChildItem -Path Cert:\\LocalMachine\\My | Where-Object {$_.Thumbprint -eq '#{thumbprint}'}) { $true } else { $false }"
     end
