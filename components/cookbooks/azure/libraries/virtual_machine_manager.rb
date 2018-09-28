@@ -193,7 +193,7 @@ module AzureCompute
       vm_hash[:username] = @initial_user
 
       if @platform == 'windows'
-        vm_hash[:password] = get_random_password
+        vm_hash[:password] = @virtual_machine_lib.get_random_password
       else
         vm_hash[:disable_password_authentication] = true
       end
@@ -349,13 +349,6 @@ module AzureCompute
       sizes_arr.last
     end
 
-    def get_random_password
-      require 'securerandom'
-      password = SecureRandom.base64(15)
-      OOLog.info("secure password: #{password}")
-      password
-    end
-
-    private :get_security_group_id, :get_vm_size_id, :pick_latest_vm_size, :get_random_password
+    private :get_security_group_id, :get_vm_size_id, :pick_latest_vm_size
   end
 end

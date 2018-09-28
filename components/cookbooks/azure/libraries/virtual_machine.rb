@@ -86,6 +86,7 @@ module AzureCompute
       resource_group_name = vm_params[:resource_group]
       extension_exists = @compute_service.virtual_machine_extensions.check_vm_extension_exists(resource_group_name, vm_params[:name], extension_name)
       if !extension_exists
+        encoded_cmd = encoded_script(ssh_keys)
         start_time = Time.now.to_i
         @compute_service.virtual_machine_extensions.create(
                 name: extension_name,
@@ -96,10 +97,7 @@ module AzureCompute
                 type: 'CustomScriptExtension',
                 type_handler_version: '1.9',
                 settings: {
-                    "fileUris" => [
-                        "https://oneopsazure.blob.core.windows.net/scripts/add_ssh_keys.ps1"
-                    ],
-                    "commandToExecute" => "powershell.exe -ExecutionPolicy Unrestricted -File add_ssh_keys.ps1 -ssh_keys \"#{ssh_keys}\""
+                    "commandToExecute" => "powershell.exe -ExecutionPolicy Unrestricted -encodedCommand #{encoded_cmd}"
                 }
         )
         end_time = Time.now.to_i
@@ -207,5 +205,35 @@ module AzureCompute
       puts "***TAG:az_redeploy_vm=#{duration}" if ENV['KITCHEN_YAML'].nil?
       response
     end
+
+    def encoded_script(ssh_keys)
+      require 'base64'
+      script = <<EOH
+      $ssh_keys = "#{ssh_keys}"
+      $username = "oneops"
+      $random_password = #{get_random_password}
+      Invoke-Command -ScriptBlock {net user $username ""$random_password"" /add}
+      Invoke-Command -ScriptBlock {net localgroup Administrators $username /add}
+      $config_file = "C:/cygwin64/home/$($username)/.ssh/authorized_keys"
+      if(!(Test-Path -Path $config_file)) {
+        New-Item $config_file -type file -force
+      }
+      Add-Content $config_file -Value $ssh_keys
+      Invoke-Command -ScriptBlock {icacls "C:/cygwin64/home/$($username)" /setowner $username /T /C /q}
+      Invoke-Command -ScriptBlock {net user azure /logonpasswordchg:yes}
+EOH
+      encoded_cmd = Base64.strict_encode64(script.encode('utf-16le'))
+      OOLog.info("encoded_cmd: #{encoded_cmd}")
+      encoded_cmd
+    end
+
+    def get_random_password
+      require 'securerandom'
+      password = SecureRandom.base64(15)
+      OOLog.info("secure password: #{password}")
+      password
+    end
+
+
   end
 end
