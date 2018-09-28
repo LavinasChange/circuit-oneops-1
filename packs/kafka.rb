@@ -240,7 +240,28 @@ resource "kafka-console",
             :thresholds => {
                 'NginxProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1),'unhealthy')
             }
-        }
+        },
+        'KafkaConsoleLog' => {:description => 'Kafka Console Log',
+                 :source => '',
+                 :chart => {'min' => 0, 'unit' => ''},
+                 :cmd => 'check_logfiles!logkafka!#{cmd_options[:logfile]}!#{cmd_options[:warningpattern]}!#{cmd_options[:criticalpattern]}',
+                 :cmd_line => '/opt/nagios/libexec/check_logfiles   --noprotocol --tag=$ARG1$ --logfile=$ARG2$ --warningpattern="$ARG3$" --criticalpattern="$ARG4$"',
+                 :cmd_options => {
+                     'logfile' => '/var/log/kafka-manager/kafka-manager.log',
+                     'warningpattern' => 'WARN',
+                     'criticalpattern' => 'OutOfMemoryError'
+                 },
+                 :metrics => {
+                     'logkafka_lines' => metric(:unit => 'lines', :description => 'Scanned Lines', :dstype => 'GAUGE'),
+                     'logkafka_warnings' => metric(:unit => 'warnings', :description => 'Warnings', :dstype => 'GAUGE'),
+                     'logkafka_criticals' => metric(:unit => 'criticals', :description => 'Criticals', :dstype => 'GAUGE'),
+                     'logkafka_unknowns' => metric(:unit => 'unknowns', :description => 'Unknowns', :dstype => 'GAUGE')
+                 },
+                 :thresholds => {
+                     'CriticalKafkaLogException' => threshold('1m', 'avg', 'logkafka_criticals', trigger('>=', 5, 1, 1), reset('<', 4, 5, 1),'unhealthy'),
+                     'WarningKafkaLogException' => threshold('1m', 'avg', 'logkafka_warnings', trigger('>=', 20, 1, 1), reset('<', 20, 5, 1)),
+                 }
+             }
      }
 
 resource "artifact",
