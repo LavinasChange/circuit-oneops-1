@@ -1,5 +1,11 @@
-CIRCUIT_PATH = '/opt/oneops/inductor/circuit-oneops-1'.freeze
-require "#{CIRCUIT_PATH}/components/spec_helper.rb"
+begin
+  CIRCUIT_PATH = '/opt/oneops/inductor/circuit-oneops-1'.freeze
+  require "#{CIRCUIT_PATH}/components/spec_helper.rb"
+rescue Exception => e
+  is_windows = ENV['OS'] == 'Windows_NT'
+  CIRCUIT_PATH = "#{is_windows ? 'C:/Cygwin64' : ''}/home/oneops"
+  require "#{CIRCUIT_PATH}/circuit-oneops-1/components/spec_helper.rb"
+end
 
 pem = nil
 pfx = nil
