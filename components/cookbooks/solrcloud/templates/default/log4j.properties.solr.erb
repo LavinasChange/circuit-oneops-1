@@ -19,7 +19,10 @@ log4j.appender.file.MaxBackupIndex=9
 #- File to log to and log format
 log4j.appender.file.File=${solr.log}/solr.log
 log4j.appender.file.layout=org.apache.log4j.PatternLayout
-log4j.appender.file.layout.ConversionPattern=%-5p - %d{yyyy-MM-dd HH:mm:ss.SSS}; %C; %m\n
+#- log4j.appender.file.layout.ConversionPattern=%-5p - %d{yyyy-MM-dd HH:mm:ss.SSS}; %C; %m\n
+#- Changed ConversionPattern from above to below. %X helps in viewing collection, shard and replica.
+#- Difference between the two lines is %C and %c (https://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/PatternLayout.html)
+log4j.appender.file.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) %X{core} %c{1.} %m%n
 
 log4j.logger.org.apache.zookeeper=WARN
 log4j.logger.org.apache.hadoop=WARN
