@@ -9,7 +9,7 @@ root_user = 'root'
 root_group = 'root'
 exe_file = 'logstash-forwarder'
 if is_windows
-  root_user = 'Administrator'
+  root_user = (node.cloud_provider =~ /azure/) ? 'azure' : 'Administrator'
   root_group = 'Administrators'
   exe_file = 'logstash-forwarder.exe'
 end
@@ -96,15 +96,15 @@ template template_name do
   mode 0700
   not_if {is_windows}
 end
-  
-#Install service for windows  
+
+#Install service for windows
 if is_windows
   powershell_script 'Install service' do
     code "C:/Cygwin64/bin/cygrunsrv.exe -I perf-agent -p /opt/logstash-forwarder/bin/#{exe_file} -a '-config=/etc/logstash-forwarder/perf-agent-lsf.conf -spool-size 20'"
     not_if {service_exists}
   end
 end
-  
+
 #ensure the service is running
 service 'perf-agent' do
   action [ :enable, :restart ]

@@ -172,7 +172,7 @@ resource "os",
 
 resource "volume",
   :requires       => {
-    :constraint   => "1..1"
+    :constraint   => "1..*"
   },
   :attributes     => {
     "mount_point" => '$OO_LOCAL{drive_name}'

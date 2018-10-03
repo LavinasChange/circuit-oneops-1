@@ -1,5 +1,5 @@
 
-if node.cloud_provider =~ /azure/ && !node['fast_image']
+if node['platform'] != 'windows' && node.cloud_provider =~ /azure/ && !node['fast_image']
   package "ntp" do
     action :install
   end
@@ -18,13 +18,13 @@ Chef::Log.info("Configuring and enabling NTP")
 if node['platform'] == 'windows'
 
   service 'w32time' do
-    action [ :enable, :start ] 
+    action [ :enable, :start ]
   end
-  
+
   execute 'set-ntp-server' do
     command "w32tm /config /manualpeerlist:\"#{ntpservers.collect {|x| x + ",0x09" }.join(" ")}\" /syncfromflags:MANUAL /reliable:yes /update & w32tm /resync /force"
   end
-  
+
 else
   template "/etc/ntp.conf" do
     source "ntp.conf.erb"
@@ -35,7 +35,7 @@ else
     user "root"
     group "root"
   end
-  
+
   service "ntpd" do
     case node['platform']
     when 'centos','redhat','fedora'
@@ -53,4 +53,3 @@ else
     end
   end
 end
-
