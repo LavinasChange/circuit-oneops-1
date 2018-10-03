@@ -166,7 +166,7 @@ resource "solrcloud",
     #     have to work on a very large chunk of memory and take long pauses. Promotions from the young
     #     generation happen more frequently, consume lesser time and do not burden the next generation
     'gc_tune_params' => '["+UseG1GC", "MaxGCPauseMillis=250", "ConcGCThreads=4", "ParallelGCThreads=8", "+UseLargePages", "+AggressiveOpts", "+PerfDisableSharedMem", "+ParallelRefProcEnabled", "InitiatingHeapOccupancyPercent=50", "G1ReservePercent=18", "MaxNewSize=4G", "PrintFLSStatistics=1", "+PrintPromotionFailure", "+HeapDumpOnOutOfMemoryError", "HeapDumpPath=/app/solrdata/logs/heapdump"]',
-    'solr_opts_params' => '["solr.autoSoftCommit.maxTime=15000", "solr.autoCommit.maxTime=60000", "solr.directoryFactory=solr.MMapDirectoryFactory", "socketTimeout=30000", "connTimeout=30000", "maxConnectionsPerHost=200", "distribUpdateSoTimeout=60000", "distribUpdateConnTimeout=40000", "solr.jetty.threads.max=10000"]',
+    'solr_opts_params' => '["solr.autoSoftCommit.maxTime=15000", "solr.autoCommit.maxTime=60000", "solr.directoryFactory=solr.MMapDirectoryFactory", "socketTimeout=30000", "connTimeout=30000", "maxConnectionsPerHost=10000", "distribUpdateSoTimeout=60000", "distribUpdateConnTimeout=40000", "solr.jetty.threads.max=10000"]',
     'skip_solrcloud_comp_execution' => 'false',
     'enable_cinder' => 'true',
     'solr_custom_component_version' => '0.0.8',
