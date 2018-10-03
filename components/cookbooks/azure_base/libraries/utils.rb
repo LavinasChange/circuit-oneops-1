@@ -134,10 +134,14 @@ module Utils
   end
 
   def get_resource_tags(node)
-
     tags = {}
+    ns_path_parts = node['workorder']['rfcCi']['nsPath'].split('/')
+    organization = ns_path_parts[1]
+    assembly = ns_path_parts[2]
+    environment = ns_path_parts[3]
+    platform = ns_path_parts[5]
 
-    azuretagkeys = ["applicationname", "notificationdistlist", "costcenter", "platform", "deploymenttype", "environmentinfo", "sponsorinfo", "ownerinfo"]
+    azuretagkeys = %w[notificationdistlist costcenter deploymenttype sponsorinfo]
 
     org_tags = JSON.parse(node['workorder']['payLoad']['Organization'][0]['ciAttributes']['tags']).select {|k, v| azuretagkeys.include?(k)}
     assembly_tags = JSON.parse(node['workorder']['payLoad']['Assembly'][0]['ciAttributes']['tags']).select {|k, v| azuretagkeys.include?(k)}
@@ -146,6 +150,10 @@ module Utils
     tags.merge!(org_tags)
     tags.merge!(assembly_tags)
     tags['owner'] = assembly_owner_tag
+    tags['ownerinfo'] = organization
+    tags['applicationname'] = assembly
+    tags['environmentinfo'] = environment
+    tags['platform'] = platform
 
     return tags
   end
