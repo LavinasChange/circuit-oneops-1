@@ -1,7 +1,7 @@
 include_pack "genericlb"
 
 name "iis"
-description "In`t`ernet Information Services(IIS)"
+description "Internet Information Services(IIS)"
 type "Platform"
 category "Web Application"
 
