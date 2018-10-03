@@ -1,7 +1,7 @@
 include_pack "genericlb"
 
 name "iis"
-description "Internet Information Services(IIS)"
+description "In`t`ernet Information Services(IIS)"
 type "Platform"
 category "Web Application"
 
@@ -326,7 +326,7 @@ resource "os",
 
 resource "volume",
   :requires       => {
-    :constraint   => "1..1"
+    :constraint   => "1..*"
   },
   :attributes     => {
     "mount_point" => '$OO_LOCAL{drive_name}'

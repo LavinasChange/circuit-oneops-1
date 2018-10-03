@@ -157,10 +157,13 @@ device_maps.each do |dev_vol|
 
   if node["provider_class"] == 'azure'
     resource_group_name = AzureBase::ResourceGroupManager.new(node).rg_name
-    managed_disks  = provider.managed_disks(resource_group: resource_group_name)
-    disk = managed_disks.detect{ |datadisk| (datadisk.name == vol_id) }
+    instance_name = node[:workorder][:payLoad][:ManagedVia][0][:ciAttributes][:instance_name]
+    Chef::Log.info("Resource Group Name: #{resource_group_name}, Instance Name: #{instance_name}")
+    server  = provider.servers.get(resource_group_name, instance_name)
+    disk = server.data_disks.detect { |datadisk| (datadisk.name == vol_id) }
     storage_size = disk.disk_size_gb
-    arg_list = "-Command \"& {#{ps_volume_script} -DriveLetter #{mount_point} -storage_size #{storage_size} }\" "
+    lun = disk.lun
+    arg_list = "-Command \"& {#{ps_volume_script} -DriveLetter #{mount_point} -lun #{lun} -storage_size #{storage_size} }\" "
   else
     vol = nil
     vol = storage_provider.volumes.get vol_id

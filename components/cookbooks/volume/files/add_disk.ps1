@@ -4,7 +4,9 @@ param(
 	[parameter(Mandatory=$false)]
 	[string]$vol_id,
 	[parameter(Mandatory=$false)]
-	[int64]$storage_size
+	[int64]$storage_size,
+	[parameter(Mandatory=$false)]
+	[int]$lun = -1
 )
 $ErrorActionPreference = "Stop"
 #Logging
@@ -29,6 +31,7 @@ function Output-CustomError ([string]$ErrMsg, [System.Exception]$Err)
 #Assuming size is in gb
 
 $GB = [math]::pow(1024,3)
+$DiskNum = -1
 
 #Get offline disks and switch them online
 #Conditions:
@@ -54,18 +57,29 @@ try
 	Write-Host "Change CD ROM Drive Letter in VM to z: Drive"
 	(gwmi Win32_cdromdrive).drive | %{$a = mountvol $_ /l;mountvol $_ /d;$a = $a.Trim();mountvol z: $a}
 
-  $disk = Get-Disk | Where-Object { $_.IsSystem -eq $False -and $_.Size -gt $GB`
-    -and ( ($_.SerialNumber -and $vol_id -like "$($_.SerialNumber)*") -or (!($vol_id) -and !($_.SerialNumber) ) )`
-    -and (!($storage_size) -or $storage_size*$GB -eq $_.Size) }
+	if($lun -eq -1)
+	{
+		$disk = Get-Disk | Where-Object { $_.IsSystem -eq $False -and $_.Size -gt $GB`
+	    -and ( ($_.SerialNumber -and $vol_id -like "$($_.SerialNumber)*") -or (!($vol_id) -and !($_.SerialNumber) ) )`
+	    -and (!($storage_size) -or $storage_size*$GB -eq $_.Size) }
 
-  if (!$disk)
-  { Write-Host "About to call Output-CustomerError 1"
-    Output-CustomError -ErrMsg "The specified disk was not found. Make sure the appropriate storage is attached to the compute."
+	  if (!$disk) { Output-CustomError -ErrMsg "The specified disk was not found. Make sure the appropriate storage is attached to the compute." }
+
+		if ($disk.Length -gt 1) {Output-CustomError -ErrMsg "Multiple disks matched given vol_id: $vol_id"}
+
+	  $DiskNum = $disk.Number
   }
+	else
+	{
+		$disk = Get-WmiObject Win32_DiskDrive | Where-Object {  $_.Size -gt $GB`
+			-and (!($storage_size) -or [math]::Round($_.Size/$GB) -eq $storage_size)`
+		  -and $_.Model -eq "Microsoft Virtual Disk" -and $_.scsilogicalunit -eq $lun }
 
-  if ($disk.Length -gt 1) {Output-CustomError -ErrMsg "Multiple disks matched given vol_id: $vol_id"}
+		if (!$disk) { Output-CustomError -ErrMsg "The specified disk was not found. Make sure the appropriate storage is attached to the compute." }
 
-  $DiskNum = $disk.Number
+	  $DiskNum = $disk.Index
+
+	}
 
   #Check if a partition with this DriveLetter already exists on another disk
   If (Get-Disk | Get-Partition | Where-Object {$_.DriveLetter -eq $DriveLetter -and $_.DiskNumber -ne $DiskNum})
