@@ -101,7 +101,7 @@ attribute 'sudoer_cmds',
   :format => {
     :help => 'Enter a list of commands allowed to be executed with sudo',
     :category => '2.Options',
-    :order => 4
+    :order => 4,
     :filter => {'all' => {'visible' => 'false', 'editable' => 'false'}}
   }
 
