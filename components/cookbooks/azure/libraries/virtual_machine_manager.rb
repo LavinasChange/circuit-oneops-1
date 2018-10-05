@@ -32,7 +32,7 @@ module AzureCompute
       @image_id = node['image_id'].split(':')
       @oosize_id = node[:oosize_id]
       @ip_type = node['ip_type']
-      @platform = node[:ostype].downcase.include?('windows') ? 'windows' : 'linux'
+      @platform = platform(node)
 
       @platform_ci_id = node['workorder']['box']['ciId']
       @compute_ci_id = node['workorder']['rfcCi']['ciId']
@@ -349,6 +349,14 @@ module AzureCompute
       sizes_arr.last
     end
 
-    private :get_security_group_id, :get_vm_size_id, :pick_latest_vm_size
+    def platform(node)
+      if node.key?('ostype')
+        node['ostype'].downcase.include?('windows') ? 'windows' : 'linux'
+      else
+        @compute_service['ostype'].include?('windows') ? 'windows' : 'linux'
+      end
+    end
+
+    private :get_security_group_id, :get_vm_size_id, :pick_latest_vm_size, :platform
   end
 end
