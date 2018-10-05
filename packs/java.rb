@@ -28,15 +28,16 @@ resource "secgroup",
              :constraint => "1..1",
              :services => "compute"
          }
-   
+
 # depends_on
 [ { :from => 'java',  :to => 'os' },
+  { :from => 'user',  :to => 'java' },
   { :from => 'build',   :to => 'java' } ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
     :relation_name => 'DependsOn',
     :from_resource => link[:from],
     :to_resource   => link[:to],
-    :attributes    => { "flex" => false, "min" => 1, "max" => 1 } 
+    :attributes    => { "flex" => false, "min" => 1, "max" => 1 }
 end
 
 # managed_via
@@ -46,5 +47,5 @@ end
     :relation_name => 'ManagedVia',
     :from_resource => from,
     :to_resource   => 'compute',
-    :attributes    => { } 
+    :attributes    => { }
 end
