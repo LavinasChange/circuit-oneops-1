@@ -470,6 +470,23 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
   solr_custom_comp_jar = "solr-custom-components-#{solr_custom_comp_version}.jar"
   solr_plugins_dir = "/app/solr#{node['solrmajorversion']}/plugins"
 
+  # Removing any solr-custom-component jars that are existing. Later new ones are added.
+  ruby_block 'Deleting the previously existing solr-custom components' do
+    block do
+      begin
+        Chef::Log.info("Deleting the following previous solr-custom-component jars: \n")
+        contents = `cd #{solr_plugins_dir}; ls -ltr solr-custom-components-*`
+        contents_arr=contents.split("\n")
+        for item in contents_arr
+          Chef::Log.info(item+"\n")
+        end
+        `cd #{solr_plugins_dir}; sudo rm solr-custom-components-*`
+      rescue Exception => e
+        Chef::Log.error(e.message)
+      end
+    end
+  end
+
   ["#{solr_plugins_dir}"].each { |dir|
     Chef::Log.info("creating #{dir}")
     directory dir do

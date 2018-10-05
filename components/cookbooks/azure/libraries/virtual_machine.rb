@@ -78,6 +78,35 @@ module AzureCompute
       virtual_machine
     end
 
+
+    def create_virtual_machine_extension(vm_params)
+      OOLog.info("Creating virtual machine extension '#{vm_params[:name]}' in '#{vm_params[:resource_group]}' ")
+      ssh_keys = vm_params[:ssh_key_data]
+      extension_name = 'mse'
+      resource_group_name = vm_params[:resource_group]
+      extension_exists = @compute_service.virtual_machine_extensions.check_vm_extension_exists(resource_group_name, vm_params[:name], extension_name)
+      if !extension_exists
+        encoded_cmd = encoded_script(ssh_keys)
+        start_time = Time.now.to_i
+        @compute_service.virtual_machine_extensions.create(
+                name: extension_name,
+                resource_group: resource_group_name,
+                location: vm_params[:location],
+                vm_name: vm_params[:name],            # Extension will be installed on this VM
+                publisher: 'Microsoft.Compute',
+                type: 'CustomScriptExtension',
+                type_handler_version: '1.9',
+                settings: {
+                    "commandToExecute" => "powershell.exe -ExecutionPolicy Unrestricted -encodedCommand #{encoded_cmd}"
+                }
+        )
+        end_time = Time.now.to_i
+        duration = end_time - start_time
+        OOLog.info("Operation: virtual machine extension creation took #{duration} seconds ")
+        puts "***TAG:az_create_vm_extension=#{duration}" if ENV['KITCHEN_YAML'].nil?
+      end
+    end
+
     def delete(resource_group_name, vm_name)
       begin
         OOLog.info("Deleting VM '#{vm_name}' in '#{resource_group_name}' ")
@@ -176,5 +205,34 @@ module AzureCompute
       puts "***TAG:az_redeploy_vm=#{duration}" if ENV['KITCHEN_YAML'].nil?
       response
     end
+
+    def encoded_script(ssh_keys)
+      require 'base64'
+      script = <<EOH
+      $username = "oneops"
+      Invoke-Command -ScriptBlock {net user $username "#{get_random_password}"  /add}
+      Invoke-Command -ScriptBlock {net localgroup Administrators $username /add}
+      $config_file = "C:/cygwin64/home/$($username)/.ssh/authorized_keys"
+      if(!(Test-Path -Path $config_file)) {
+        New-Item $config_file -type file -force
+      }
+      Add-Content $config_file -Value "#{ssh_keys}"
+      Invoke-Command -ScriptBlock {icacls "C:/cygwin64/home/$($username)" /setowner $username /T /C /q}
+      Invoke-Command -ScriptBlock {net user azure /logonpasswordchg:yes}
+EOH
+      encoded_cmd = Base64.strict_encode64(script.encode('utf-16le'))
+      OOLog.info("encoded_cmd: #{encoded_cmd}")
+      encoded_cmd
+    end
+
+    def get_random_password
+      require 'securerandom'
+      password = SecureRandom.base64(15)
+      password = password[0..13] if password.size > 14
+      OOLog.info("secure password: #{password}")
+      password
+    end
+
+
   end
 end

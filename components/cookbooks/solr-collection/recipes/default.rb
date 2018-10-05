@@ -47,6 +47,9 @@ Chef::Log.info("solr_custom_params = #{node['solr_custom_params'].to_json}")
 
 node.set['action_name'] = actionName
 
+#getting the checkbox value for the metrics-metrics to be set
+node.set['merge_metrics'] = ci['merge_metrics']
+
 node.set['collection_name'] = ci['collection_name']
 node.set['num_shards'] = ci['num_shards']
 node.set['replication_factor'] = ci['replication_factor']
@@ -60,6 +63,7 @@ node.set['autocommit_maxdocs'] = ci['autocommit_maxdocs']
 node.set['autosoftcommit_maxtime'] = ci['autosoftcommit_maxtime']
 node.set['updatelog_numrecordstokeep'] = ci['updatelog_numrecordstokeep']
 node.set['updatelog_maxnumlogstokeep'] =  ci['updatelog_maxnumlogstokeep']
+node.set['solr_custom_component_version'] = solrcloud_ci['solr_custom_component_version']
 node.set['mergepolicyfactory_maxmergeatonce'] = ci['mergepolicyfactory_maxmergeatonce']
 node.set['mergepolicyfactory_segmentspertier'] = ci['mergepolicyfactory_segmentspertier']
 node.set['rambuffersizemb'] = ci['rambuffersizemb']
@@ -80,6 +84,7 @@ node.set['collections_for_node_sharing'] = ci['collections_for_node_sharing']
 node.set['block_expensive_queries'] = ci['block_expensive_queries']
 node.set['max_start_offset_for_expensive_queries'] = ci['max_start_offset']
 node.set['max_rows_fetch_for_expensive_queries'] = ci['max_rows_fetch']
+node.set['enable_log_delete_query_processor'] = ci['enable_log_delete_query_processor']
 
 node.set['enable_slow_query_logger'] = ci['enable_slow_query_logger']
 node.set['slow_query_threshold_millis'] = ci['slow_query_threshold_millis']

@@ -93,7 +93,18 @@ attribute 'sudoer',
       :category => '2.Options',
       :order => 3
     }
-    
+
+attribute 'sudoer_cmds',
+  :description => 'Commands for sudo',
+  :data_type => 'array',
+  :default => '["tcpdump", "jmap", "jcmd", "jstat", "jstack", "strace"]',
+  :format => {
+    :help => 'Enter a list of commands allowed to be executed with sudo',
+    :category => '2.Options',
+    :order => 4,
+    :filter => {'all' => {'visible' => 'false', 'editable' => 'false'}}
+  }
+
 attribute 'authorized_keys',
   :description => "Authorized Keys",
   :data_type => 'array',

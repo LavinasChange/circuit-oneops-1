@@ -102,6 +102,9 @@ end
 def write_pings(mcrouterConfig, graphite_prefix, graphite_servers, logfiles_path, oo_cloud, oo_env)
     begin
         raise "No IPs found in mcrouter config." if mcrouterConfig.ips.nil? or mcrouterConfig.ips.empty?
+
+        max_ping_region = Hash.new
+
         mcrouterConfig.ips.each do |ip_hash|
             next if ip_hash.nil? or ip_hash.empty?
             ip = ip_hash["ip"]
@@ -116,15 +119,43 @@ def write_pings(mcrouterConfig, graphite_prefix, graphite_servers, logfiles_path
             rescue => e
                 puts "ping_stats:exception:Fail to send data to Graphite." + e.message
             end
+
             begin
-                level_name = 'meghacache_ping,level2=' + ip + ',level3=' + (ip_hash["pool_info"]["region"] ? ip_hash["pool_info"]["region"] : '')
+                level3 = ip_hash["pool_info"]["region"] ? ip_hash["pool_info"]["region"] : ''
+                level_name = 'meghacache_ping,level2=' + ip + ',level3=' + level3
                 stat_hash = {"stats" => Hash.new, "delta" => Hash.new}
                 stat_hash['stats']['ping_ms'] = ping_ms
-                write_to_telegraph(logfiles_path, stat_hash, level_name)
+                ping_region = Hash.new
+                ping_region.store(level_name, stat_hash);
+
+                if (max_ping_region.key?(level3))
+                    max_ping_obj = max_ping_region.fetch(level3)
+                    stats = max_ping_obj.values[0]
+                    max_ping = stats["stats"].values[0]
+                    if (ping_ms > max_ping)
+                        max_ping_region.store(level3, ping_region)
+                    end
+                else
+                    max_ping_region.store(level3, ping_region)
+                end
             rescue => e
                 puts "ping_stats:exception:Fail to send data to Telegraph." + e.message
             end
         end
+
+        begin
+            if (!max_ping_region.empty?)
+                pings = max_ping_region.values
+                pings.each {|region_ping|
+                    level_name = region_ping.keys[0]
+                    stat_hash = region_ping.values[0]
+                    write_to_telegraph(logfiles_path, stat_hash, level_name)
+                }
+            end
+        rescue => e
+          puts "ping_stats:exception:Fail to send data to Telegraph." + e.message
+        end
+
     rescue => e
         puts "ping_stats:exception: #{e}"
     end
@@ -190,9 +221,9 @@ graphite_servers = JSON.parse('<%= @graphite_servers %>')
 current_cloud_id = '<%= @current_cloud_id %>'
 
 # The list of "raw" stats we want
-memcached_stats = ['bytes', 'bytes_read', 'bytes_written', 'curr_connections', 'curr_items', 'limit_maxbytes']
+memcached_stats = ['bytes', 'curr_connections', 'curr_items', 'limit_maxbytes']
 # The list of stats for which we want delta values (note--these don't have to match the stats list)
-memcached_delta_stats = ['cmd_get', 'cmd_set', 'evictions', 'get_hits', 'get_misses', 'bytes_read']
+memcached_delta_stats = ['cmd_get', 'cmd_set', 'evictions', 'get_hits', 'get_misses', 'cmd_touch']
 
 ms = MemcacheStats.new('localhost', '<%= @memcached_port %>')
 ms.pstore_file = "graphite_memcached.pstore"
@@ -217,11 +248,10 @@ $graphiteConfigMap.store("memchached", GraphiteConfig.new(graphite_prefix, graph
 
 # The list of "raw" stats we want
 mcrouter_stats = ['num_servers', 'num_servers_up', 'num_servers_down',
-            'num_suspect_servers', 'cmd_cas', 'cmd_delete',
-            'cmd_get', 'cmd_gets', 'cmd_set',
-            'duration_us', 'asynclog_requests', 'num_clients',
-            'destination_pending_reqs', 'destination_inflight_reqs',
-            'proxy_reqs_processing', 'proxy_reqs_waiting']
+                  'num_suspect_servers', 'cmd_delete',
+                  'cmd_get', 'cmd_set',
+                  'duration_us', 'num_clients',
+                  'destination_pending_reqs', 'destination_inflight_reqs']
 # The list of stats for which we want delta values (note--these don't have to match the stats list)
 mcrouter_delta_stats = []
 
@@ -246,8 +276,7 @@ mcrouterConfig.parsedConfig['pools'].select{ |k,v| k.start_with?('cloud-' + curr
 write_to_telegraph(logfiles_path, stat_hash, 'mcrouter')
 $graphiteConfigMap.store("mcrouter_", GraphiteConfig.new(graphite_prefix, graphite_servers, logfiles_path, oo_cloud, oo_env, stat_hash, 'mcrouter_'))
 
-network_delta_stats = ['rx_bytes', 'tx_bytes', 'rx_packets', 'tx_packets', 'rx_dropped', 'tx_dropped', 'rx_errors', 'tx_errors']
-
+network_delta_stats = ['rx_bytes', 'tx_bytes', 'rx_packets', 'tx_packets', 'rx_dropped', 'tx_dropped']
 begin
     stat_hash = NetworkStats.new().get_stats(network_delta_stats)
     write_to_telegraph(logfiles_path, stat_hash, 'meghacache_net')

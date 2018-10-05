@@ -64,7 +64,7 @@ attribute 'passphrase',
   :encrypted => true,
   :default => "",
   :format => {
-    :help => 'Enter the passphrase for the certificate key',
+    :help => 'Password must be at least 12 chars with upper case and lower case letter, number and special character.',
     :category => '1.Certificate',
     :order => 5,
     :filter => {'all' => {'visible' => 'pfx_enable:eq:false'}}

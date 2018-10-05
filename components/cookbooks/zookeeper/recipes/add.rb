@@ -54,6 +54,14 @@ end
 
 include_recipe 'zookeeper::config_files'
 
+# create "zookeeper_status.sh" script for telegraf
+template "/usr/local/bin/zookeeper_status.sh" do
+    source "zookeeper_status.sh.erb"
+    owner "root"
+    group "root"
+    mode  '0755'
+end
+
 is_zookeeper_running = system("service zookeeper-server status")
 service "restart-zookeeper-server" do
   service_name "zookeeper-server"

@@ -352,7 +352,7 @@ fi
 owner=$( ls -ld /opt/oneops/rubygems_proxy | awk '{print $3}' )
 if [ "$owner" == "root" ] ; then
   chown -R oneops:oneops /home/oneops /opt/oneops
-  chown -R nagios:nagios /etc/nagios /var/log/nagios /etc/nagios/conf.d
+  chown -R nagios:nagios /etc/nagios
 else
   chown -R oneops:oneops /home/oneops/.ssh /opt/oneops/workorder /opt/oneops/rubygems_proxy
 fi

@@ -37,6 +37,8 @@ default['kafka']['kafka_jmx_port'] = '11061'
 
 default['kafka']['zookeeper_jmx_port'] = '11063'
 
+default['kafka']['kafka_bin_dir'] = '/usr/local/kafka/bin'
+
 
 ########################
 # general kafka broker

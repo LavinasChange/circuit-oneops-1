@@ -74,7 +74,7 @@ nodes.each do |compute|
 
       Chef::Log.info("Waiting for #{ip} to finish joining")
       start = Time.now.to_i
-      while(node_joining(ip)) do
+      while(Cassandra::Util.node_joining(ip)) do
           if Time.now.to_i - start >= 4 * 60 && !receiving_streams(ip)
               puts "***FAULT:FATAL=Node #{ip} joining for more than 4 minutes with no active streams; it may be hung joining the ring; restarting Cassandra may fix it."
               e = Exception.new("no backtrace")
@@ -133,43 +133,4 @@ ruby_block "remove_dead_nodes" do
     end
     #STRCASS-434
     only_if { node.workorder.payLoad.has_key?('RequiresComputes') && skipDecommissionDownNodes == nil}
-end
-
-# assuming we've added some new nodes here.  So, lets make sure
-# we run a nodetool cleanup on the nodes that were existing in the cluster
-# to free up space
-Chef::Log.info("new_nodes is #{new_nodes}")
-Chef::Log.info("existing nodes: #{existing_nodes.inspect}")
-if new_nodes
-  Chef::Log.info("We have some new nodes being added to the cluster")
-  existing_nodes.each do |ip|
-    ruby_block "#{ip}_cleanup" do
-      Chef::Resource::RubyBlock.send(:include, Cassandra::Util)
-      block do
-        cmd = "#{nodetool} -h #{ip} cleanup 2>&1"
-        Chef::Log.info(cmd)
-        result  = `#{cmd}`
-        if $? != 0
-          Chef::Log.error("cleanup on node #{ip} failed with #{result}")
-        end
-      end
-    end
-  end
-end
-
-
-# keyspaces and other extra
-unless extra.nil? || extra.empty?
-  file "/tmp/cassandra-schema.txt" do
-      owner "root"
-      group "root"
-      mode "0755"
-      content "#{extra}"
-      action :create
-  end
-  execute "extra" do
-    command "#{cassandra_bin}cassandra-cli -host localhost -port 9160 -f /tmp/cassandra-schema.txt"
-    action :run
-    ignore_failure true
-  end
 end

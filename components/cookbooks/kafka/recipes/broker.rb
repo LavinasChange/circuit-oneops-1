@@ -11,6 +11,8 @@ kafka_user = node['kafka']['user']
 # set kafka config dir - specified in broker.rb attribute
 kafka_config_dir = node['kafka']['config_dir']
 
+kafka_bin_dir = node['kafka']['kafka_bin_dir']
+
 # create kafka user
 user "#{kafka_user}" do
   system true
@@ -125,10 +127,18 @@ end
      sudo chmod 777 /usr/local/kafka/bin/kafka_logerrs.sh
      sudo mkdir -p /var/tmp/check_logfiles 
      sudo touch /var/tmp/check_logfiles/check_logfiles._var_log_kafka_server.log.kafka_errlog
+     sudo touch /var/tmp/check_logfiles/check_logfiles._var_log_kafka_server.log.kafka_log_specific_errors
      sudo chmod -R 777 /var/tmp/check_logfiles
    EOF
  end
  
+ # create "kafka_log_specific_errors.sh" script 
+ template "/usr/local/kafka/bin/kafka_log_specific_errors.sh" do
+     source "kafka_log_specific_errors.sh.erb"
+     owner "root"
+     group "root"
+     mode  '0777'
+ end
  
 # broker log cleanup cron
 template "/etc/cron.d/delete_broker_logs" do
@@ -144,6 +154,22 @@ template "#{kafka_config_dir}/log4j.properties" do
     owner "#{kafka_user}"
     group "#{kafka_user}"
     mode  '0664'
+end
+
+# Change kafka gc log location and enable rotation
+template "#{kafka_bin_dir}/kafka-run-class.sh" do
+    source "kafka-run-class.sh.erb"
+    owner "#{kafka_user}"
+    group "#{kafka_user}"
+    mode  '0755'
+end
+
+# Drop kafka gc log cleanup script
+template "#{kafka_config_dir}/kafka_gclog_cleanup.sh" do
+    source "kafka_gclog_cleanup.sh.erb"
+    owner "#{kafka_user}"
+    group "#{kafka_user}"
+    mode  '0755'
 end
 
 Chef::Log.info("Memory is: #{node['memory']['total']}")

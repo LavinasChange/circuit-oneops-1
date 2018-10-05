@@ -11,5 +11,5 @@ else
         Chef::Application.fatal!(msg)
 end
 node.set[:provider] = provider
-
+node.set[:persist_cert] = false
 

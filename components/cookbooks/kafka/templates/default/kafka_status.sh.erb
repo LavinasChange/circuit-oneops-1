@@ -4,5 +4,10 @@
 if [ "$?" = "1" ]; then
   echo {\"kafka_status\":0}
 else
-  echo {\"kafka_status\":1}
+  kafkastatus=`netstat -an |grep 9092 |grep LISTEN |wc -l`
+  if [ `netstat -an |grep 9092 |grep LISTEN |wc -l` = "1" ]; then
+        echo {\"kafka_status\":1}
+  else
+    echo {\"kafka_status\":0}
+  fi
 fi

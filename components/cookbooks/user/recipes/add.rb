@@ -114,13 +114,39 @@ end
 #The rest of attributes are Linux specific
 return if node['platform'] =~ /windows/
 
+# Create/delete a sudoer file for the user in /etc/sudoers.d
+# if user is sudoer - we create a file in /etc/sudoers.d, not restricting cmds
+# if not - we check allowed sudo commands
+sudoer = node['user']['sudoer'] == 'true'? true : false
+cmds = 'ALL'
+sudoer_action = :create
 
-if node[:user][:sudoer] == 'true'
-  Chef::Log.info("adding #{username} to sudoers.d")
-  `echo "#{username} ALL = (ALL) NOPASSWD: ALL" > /etc/sudoers.d/#{username}`
-  `chmod 440 /etc/sudoers.d/#{username}`
-else
-  `rm -f /etc/sudoers.d/#{username}`
+# Process sudoer_cmds to find out if they're actually installed
+if !sudoer && !node['user']['sudoer_cmds'].nil? && !node['user']['sudoer_cmds'].empty?
+
+  cmd_arr_raw = JSON.parse(node['user']['sudoer_cmds'])
+  cmd_arr = []
+
+  cmd_arr_raw.each do |cmd|
+    chk_cmd = "which #{cmd}"
+    sh = Mixlib::ShellOut.new(chk_cmd)
+    result = sh.run_command
+    if result.valid_exit_codes.include?(result.exitstatus)
+      cmd_arr.push(result.stdout.chomp)
+    end
+    Chef::Log.info("Checking: #{chk_cmd}, result: #{result.inspect}")
+  end
+  cmds = cmd_arr.join(',') unless cmd_arr.empty?
+end
+
+# No provided sudo cmds (or they're not installed) and the user is not sudoer
+sudoer_action = :delete if (cmds == 'ALL' && !sudoer)
+
+file "/etc/sudoers.d/#{username}" do
+  content "#{username} ALL = (ALL) NOPASSWD: #{cmds} \n"
+  mode '0440'
+  owner 'root'
+  action sudoer_action
 end
 
 # workaround for docker containers

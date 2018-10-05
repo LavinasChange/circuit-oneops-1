@@ -177,7 +177,7 @@ attribute 'rambuffersizemb',
 attribute 'maxbuffereddocs',
           :description  => "maxbuffereddocs",
           :required => false,
-          :default => '10000',
+          :default => '100000',
           :format => {
               :help => 'The threshold for number of documents in memory, after which the documents will be flushed to hard disk',
               :category => '2.UpdateHandler',
@@ -311,12 +311,23 @@ attribute 'enable_fail_queries',
               :order => 32
           }
 
+
+attribute 'enable_log_delete_query_processor',
+          :description  => "Enable Log Delete Query Processor",
+          :default => "true",
+          :format => {
+              :help => 'If selected, log delete query processor is added to the solrconfig.xml. Please change it to false if custom component version is less than 0.0.3',
+              :form => { 'field' => 'checkbox' },
+              :category => '7.Log Delete Query Processor',
+              :order => 33
+          }
+
 attribute 'backup_enabled',
           :description => 'Enable backup',
           :required => 'required',
           :format => {
             :help => 'Schedule back-up of Solr indexes at regular intervals. You must add cinder-backed storage for this to work and that storage should be large enough to store about 3 backups of the maximum index you will have on any compute.',
-            :category => '8.Solr Backup',
+            :category => '9.Solr Backup',
             :order => 1,
             :form => { 'field' => 'checkbox' }
           }
@@ -325,7 +336,7 @@ attribute 'backup_cron',
           :description => 'Backup Schedule',
           :format => {
               :help => "Solr backup cron scedule (minute hour day_of_month month day_of_week) ex for every 10 min=> */10 * * * 1",
-              :category => '8.Solr Backup',
+              :category => '9.Solr Backup',
               :filter => {"all" => {"visible" => ('backup_enabled:eq:true')}},
               :order => 2
           }
@@ -334,7 +345,7 @@ attribute 'backup_location',
           :description => 'Backup Location',
           :format => {
               :help => "Solr backup directory",
-              :category => '8.Solr Backup',
+              :category => '9.Solr Backup',
               :filter => {"all" => {"visible" => ('backup_enabled:eq:true')}},
               :order => 3
           }
@@ -343,7 +354,7 @@ attribute 'backup_number_to_keep',
           :description => 'The number of backups to keep',
           :format => {
               :help => "This integer value will be used decide how many old backups to keep while deleting previous backups.",
-              :category => '8.Solr Backup',
+              :category => '9.Solr Backup',
               :filter => {"all" => {"visible" => ('backup_enabled:eq:true')}},
               :order => 4
           }
@@ -354,7 +365,7 @@ attribute 'collections_for_node_sharing',
           :data_type => 'array',
           :format => {
               :help => 'Provide a list of all the collection-names with whom this collection will share its nodes to save hardware. All collection components in a group of shared collections must provide the names of all shared collections in their group',
-              :category => '7.Node sharing to save hardware',
+              :category => '8.Node sharing to save hardware',
               :order => 32
           }
 
@@ -365,7 +376,7 @@ attribute 'nodeip',
           :format => {
               :important => true,
               :help => 'Node IPAddress (used during replace)',
-              :category => '10.Operations Attributes',
+              :category => '11.Operations Attributes',
               :order => 33
           }
 
@@ -376,7 +387,7 @@ attribute 'first_compute_after_sort',
           :format => {
               :important => true,
               :help => 'First compute after sort (for running collection component)',
-              :category => '10.Operations Attributes',
+              :category => '11.Operations Attributes',
               :order => 34
           }
 
@@ -406,7 +417,7 @@ attribute 'estimate_two_year_doc_count',
   :description => 'Number of documents in 2 years',
   :default => "",
   :format => {
-    :category => '9.Cluster Sizing Estimates',
+    :category => '10.Cluster Sizing Estimates',
     :help => 'Do not provision the cluster thinking of current or next month needs only. It is hard to re-distribute shards later on',
     :order => 41
   }
@@ -415,7 +426,7 @@ attribute 'estimate_avg_doc_size_kb',
   :description => 'Average document size (kB)',
   :default => "",
   :format => {
-    :category => '9.Cluster Sizing Estimates',
+    :category => '10.Cluster Sizing Estimates',
     :help => "Do not calculate document size from a single document's size on disk. Getting an average from several hundred docs representing a variety of your document types",
     :order => 42
   }
@@ -424,7 +435,7 @@ attribute 'estimate_avg_nested_docs_per_doc',
   :description => 'Average number of nested docs per doc',
   :default => "",
   :format => {
-    :category => '9.Cluster Sizing Estimates',
+    :category => '10.Cluster Sizing Estimates',
     :help => "Average number of nested documents per root-level document",
     :order => 43
   }
@@ -434,7 +445,7 @@ attribute 'estimate_indexed_fields_per_doc',
   :description => 'Average indexed fields per doc',
   :default => "",
   :format => {
-    :category => '9.Cluster Sizing Estimates',
+    :category => '10.Cluster Sizing Estimates',
     :help => "Minimizing indexed fields per document increases performance",
     :order => 44
   }
@@ -444,7 +455,7 @@ attribute 'estimate_stored_fields_per_doc',
   :description => 'Average stored fields per doc',
   :default => "",
   :format => {
-    :category => '9.Cluster Sizing Estimates',
+    :category => '10.Cluster Sizing Estimates',
     :help => "Minimizing stored fields per document increases performance",
     :order => 45
   }
@@ -454,7 +465,7 @@ attribute 'ttl_field',
   :description => 'Date field used to expire documents',
   :default => "",
   :format => {
-    :category => '9.Cluster Sizing Estimates',
+    :category => '10.Cluster Sizing Estimates',
     :help => "A date field is recommended to expire documents such that document count remains under control",
     :order => 46
   }
@@ -464,7 +475,7 @@ attribute 'ttl_in_days',
   :description => 'Document expiry (in days)',
   :default => "",
   :format => {
-    :category => '9.Cluster Sizing Estimates',
+    :category => '10.Cluster Sizing Estimates',
     :help => "After how many days, the document should be expired based on the above date field",
     :order => 47
   }
@@ -474,7 +485,7 @@ attribute 'estimate_peak_updates_per_sec',
   :description => 'Approx peak updates per second',
   :default => "",
   :format => {
-    :category => '9.Cluster Sizing Estimates',
+    :category => '10.Cluster Sizing Estimates',
     :help => "Peak rate of write queries per second",
     :order => 48
   }
@@ -484,7 +495,7 @@ attribute 'estimate_peak_reads_per_sec',
   :description => 'Approx peak reads per second',
   :default => "",
   :format => {
-    :category => '9.Cluster Sizing Estimates',
+    :category => '10.Cluster Sizing Estimates',
     :help => "Peak rate of read queries per second",
     :order => 49
   }
@@ -494,7 +505,7 @@ attribute 'estimate_peak_facets_per_sec',
   :description => 'Approx peak facets per second',
   :default => "",
   :format => {
-    :category => '9.Cluster Sizing Estimates',
+    :category => '10.Cluster Sizing Estimates',
     :help => "You MUST rethink your usage if you expect more than 50 facet queries per second",
     :order => 50
   }
@@ -504,7 +515,7 @@ attribute 'estimate_peak_pivots_per_sec',
   :description => 'Approx peak pivots per second',
   :default => "",
   :format => {
-    :category => '9.Cluster Sizing Estimates',
+    :category => '10.Cluster Sizing Estimates',
     :help => "You MUST rethink your usage if you expect more than 10 pivot queries per second",
     :order => 51
   }
@@ -514,7 +525,7 @@ attribute 'estimate_peak_paginations_per_sec',
   :description => 'Approx peak pagination queries per second',
   :default => "",
   :format => {
-    :category => '9.Cluster Sizing Estimates',
+    :category => '10.Cluster Sizing Estimates',
     :help => "You MUST rethink your usage if you expect more than 20 pagination queries per second",
     :order => 52
   }
@@ -524,7 +535,7 @@ attribute 'estimate_peak_geospatials_per_sec',
   :description => 'Approx peak geo-spatial queries per second',
   :default => "",
   :format => {
-    :category => '9.Cluster Sizing Estimates',
+    :category => '10.Cluster Sizing Estimates',
     :help => "You MUST rethink your usage if you expect more than 20 geo-spatial queries per second",
     :order => 53
   }
@@ -534,7 +545,7 @@ attribute 'estimate_peak_blockjoins_per_sec',
   :description => 'Approx peak blockjoins per second',
   :default => "",
   :format => {
-    :category => '9.Cluster Sizing Estimates',
+    :category => '10.Cluster Sizing Estimates',
     :help => "You MUST rethink your usage if you expect more than 50 blockjoin queries per second",
     :order => 54
   }
@@ -544,9 +555,21 @@ attribute 'estimate_full_ingestion_minutes',
   :description => 'Approx minutes for full re-ingestion',
   :default => "",
   :format => {
-    :category => '9.Cluster Sizing Estimates',
+    :category => '10.Cluster Sizing Estimates',
     :help => "An approximate time that is required to re-index all the documents in Solr",
     :order => 55
+  }
+
+# Please refer to this https://lucene.apache.org/solr/guide/7_2/metrics-reporting.html#metrics-reporting for merge metrics reporting
+attribute 'merge_metrics',
+  :description => 'Merge Metrics to be displayed in Medusa Collection Dashboards',
+  :default => "false",
+  :format => {
+    :category => '12.Metrics for Medusa',
+    :help => "Set this to true to see the merge related metrics in Medusa Collection Dashboards.
+              Please note that in the event it is selected to be true, it can't be reverted",
+    :form => {'field' => 'checkbox'},
+    :order => 56
   }
 
 

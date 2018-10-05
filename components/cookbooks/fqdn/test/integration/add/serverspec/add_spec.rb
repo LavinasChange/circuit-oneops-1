@@ -106,10 +106,17 @@ if env.has_key?("global_dns") && env["global_dns"] == "true" && depends_on_lb &&
     end
 
     services.each do |name|
-      context "GSLB service to gslbvserver" do
-        it "should exist" do
-          status = service_names.include? name
-          expect(status).to eq(true)
+      resp = JSON.parse(conn.request(
+          :method=>:get,
+          :path=>"/nitro/v1/config/gslbservice/#{name}").body)
+
+      puts service_names
+      if resp["message"] =~ /Done/
+        context "GSLB service to gslbvserver" do
+          it "should exist" do
+            status = service_names.include? name
+            expect(status).to eq(true)
+          end
         end
       end
     end

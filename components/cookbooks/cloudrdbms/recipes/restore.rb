@@ -49,6 +49,7 @@ log "CloudRDBMS Show environment for clustername: '#{clustername}'"
 log "CloudRDBMS Show environment for drclouds: '#{drclouds}'"
 log "CloudRDBMS Show environment for cloudrdbmspackversion: '#{cloudrdbmspackversion}'"
 log "CloudRDBMS Show environment for playbook: '#{playbook}'"
+log "CloudRDBMS Show environment for restoreTime: '#{restoreTime}'"
 
 
 # if we do a deployment using multiple-clouds, this below will work, it will "see" all IP addresses
@@ -103,7 +104,7 @@ template_variables = {
   :string_of_ips          => string_of_ips,
   :local_ip               => local_ip,
   :current_node           => current_node,
-  :time                   => args["time"],
+  :time                   => restoreTime.to_s.strip,
   :oneops_cloud_tenant    => args["organization"],
   :oneops_assembly        => args["assembly"],
   :oneops_environment     => args["environment"],
@@ -116,10 +117,6 @@ template "/app/#{playbook}.yml" do
     owner "app"
     group "app"
     mode "0755"
-  verify { args["organization"].to_s.strip.length != 0 }
-  verify { args["assembly"].to_s.strip.length != 0 }
-  verify { args["environment"].to_s.strip.length != 0 }
-  verify { args["platform"].to_s.strip.length != 0 }
 end
 
 template "/app/#{playbook}.yml" do
@@ -128,10 +125,6 @@ template "/app/#{playbook}.yml" do
     owner "app"
     group "app"
     mode "0755"
-  verify { args["organization"].to_s.strip.length == 0 }
-  verify { args["assembly"].to_s.strip.length == 0 }
-  verify { args["environment"].to_s.strip.length == 0 }
-  verify { args["platform"].to_s.strip.length == 0 }
 end
 
 log "CloudRDBMS concord: start ansible job"
