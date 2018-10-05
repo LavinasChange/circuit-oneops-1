@@ -991,6 +991,7 @@ end
 
 [ { :from => 'hostname',    :to => 'os' },
   { :from => 'user',        :to => 'os' },
+  { :from => 'user',        :to => 'library' },
   { :from => 'job',         :to => 'user' },
   { :from => 'job',         :to => 'os' },
   { :from => 'volume',      :to => 'os' },
