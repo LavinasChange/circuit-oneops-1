@@ -15,8 +15,9 @@ found_folders.each do |folder|
     if(folder.include?("circuit-") && !folder.include?("-1"))
         Dir.glob("#{File.dirname(__FILE__)}/../../../../#{folder}/**/{*,.*}").each do |found_file|
             cookbook_name = found_file.split('/').last
-            if File.directory?(found_file) && cookbook_name.include?("cert_service")
-              depends cookbook_name
+            if File.directory?(found_file) && cookbook_name.include?("cert_service") && Chef::Config.has_key?(:cookbook_path)
+                ckb_path = Chef::Config[:cookbook_path]
+                depends cookbook_name if ckb_path.any? { |path| path.include?(cookbook_name.split('_').first)}
             end
         end
     end
