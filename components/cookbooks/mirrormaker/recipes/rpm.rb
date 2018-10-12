@@ -83,7 +83,12 @@ if kafka_version.to_i < 1
 		Chef::Log.error("we currently support redhat, centos, fedora. You are using some OS other than those.")
 	end
 else
-   kafka_download = "https://repository.walmart.com/content/repositories/public/io/strati/df/messaging/kafka-strati/2.11-1.1.1/kafka-strati-2.11-1.1.1.tgz"
+   if kafka_version == "1.1.1"
+   		kafka_download = "https://repository.walmart.com/content/repositories/public/io/strati/df/messaging/kafka-strati/2.11-1.1.1/kafka-strati-2.11-1.1.1.tgz"
+   else
+   		kafka_download = "https://repository.walmart.com/repository/apache-dist-archive/kafka/#{kafka_version}/kafka_2.11-#{kafka_version}.tgz"
+   end
+   
    `rm -rf /usr/local/kafka/* && mkdir -p /usr/local/kafka`
 
    remote_file "/usr/local/kafka/kafka_2.11-#{kafka_version}.tgz" do
