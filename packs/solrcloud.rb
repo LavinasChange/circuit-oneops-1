@@ -693,6 +693,21 @@ resource "solr-collection",
       :thresholds => {
         'pctgShardsWithMinActiveReplicas' => threshold('1m','avg','pctgShardsWithMinActiveReplicas',trigger('<',100,5,4),reset('=',100,2,1))
       }
+    },
+    #  This threshold is triggered when the metric is >0 in a "15 minute" duration "12 times"
+    #  This threshold is restarted when the metric is <=0 in a "15 minute" duration "1 time"
+    'ReplicaDistributionChecker' =>  {
+        :description => 'ReplicaDistributionChecker',
+        :source => '',
+        :chart => {'min'=>0, 'unit'=>''},
+        :cmd => 'replica_distribution_checker.rb!:::node.workorder.rfcCi.ciAttributes.collection_name:::',
+        :cmd_line => '/opt/nagios/libexec/replica_distribution_checker.rb $ARG1$',
+        :metrics =>  {
+            'total_replicas_to_move' => metric( :unit => '', :description => 'No. of Replicas To Move', :dstype => 'GAUGE')
+        },
+        :thresholds => {
+            'total_replicas_to_move' => threshold('1m','avg','total_replicas_to_move',trigger('>',0,15,12),reset('<=',0,15,1))
+        }
     }
   }
 
