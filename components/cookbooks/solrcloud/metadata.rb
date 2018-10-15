@@ -21,7 +21,7 @@ attribute 'solr_version',
     :category => '1.SolrCloud',
     :form => {'field' => 'select', 'options_for_select' => [
        ['6.4.2 (Deprecated)', '6.4.2'], ['6.6.0 (Deprecated)', '6.6.0'],
-       ['7.2.1', '7.2.1'], ['7.4.0 (Not tested yet)', '7.4.0']
+       ['7.2.1', '7.2.1'], ['7.4.0 (Un-tested, Do not deploy)', '7.4.0'], ['7.5.0 (Un-tested, Do not deploy)', '7.5.0']
     ]},
     :order => 4
   }
