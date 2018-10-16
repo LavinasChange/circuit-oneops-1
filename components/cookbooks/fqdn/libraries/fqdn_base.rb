@@ -245,8 +245,53 @@ module Fqdn
       end
       return values
     end
-        
-    
+
+    def get_record_hash(dns_name, dns_value, dns_type)
+      record = { :name => dns_name.downcase }
+      case dns_type
+      when 'cname'
+        record['canonical'] = dns_value
+      when 'a'
+        record['ipv4addr'] = dns_value
+      when 'aaaa'
+        record['ipv6addr'] = dns_value
+      when 'ptr'
+        if dns_name =~ Resolv::IPv4::Regex
+          record = { 'ipv4addr' => dns_name, 'ptrdname' => dns_value }
+        elsif dns_name =~ Resolv::IPv6::Regex
+          record = { 'ipv6addr' => dns_name, 'ptrdname' => dns_value }
+        end
+      when 'txt'
+        record = { 'name' => dns_name, 'text' => dns_value }
+      end
+      record
+    end
+
+    def check_record(dns_name, dns_value)
+      res = node.infoblox_conn.request(:method => :get, :path => '/wapi/v1.0/network')
+
+      exit_with_error "Infoblox Connection Unsuccessful. Response: #{res.inspect}" if res.status != 200
+
+      Chef::Log.info('Infoblox Connection Successful.')
+
+      api_version = 'v1.0'
+      api_version = 'v1.2' if dns_name =~ Resolv::IPv6::Regex # ipv6addr attribute is recognized only in infoblox api version >= 1.1
+
+      dns_val = dns_value.is_a?(String) ? [dns_value] : dns_value
+      dns_type = get_record_type(dns_name, dns_val)
+      record_hash = get_record_hash(dns_name, dns_value, dns_type)
+
+      records = JSON.parse(node.infoblox_conn.request(:method => :get, :path => "/wapi/#{api_version}/record:#{dns_type}", :body => JSON.dump(record_hash)).body)
+
+      if records.size.zero?
+        Chef::Log.info('check_record: DNS Record Entry Already Deleted.')
+        return false
+      else
+        Chef::Log.info('check_record: DNS Record Entry is Available.')
+        return true
+      end
+    end
+
     def verify(dns_name, dns_values, ns, max_retry_count=30)
       if dns_values.count > max_retry_count
         max_retry_count = dns_values.count + 1
@@ -261,6 +306,7 @@ module Fqdn
         end
         
         verified = false
+        provider = get_provider
         while !verified && retry_count<max_retry_count do
           dns_lookup_name = dns_name
           if dns_name =~ /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/
@@ -268,18 +314,23 @@ module Fqdn
           elsif dns_name =~ Resolv::IPv6::Regex
             dns_lookup_name = IPAddr.new(dns_name).reverse
           end
-          
-          puts "dig +short #{dns_type} #{dns_lookup_name} @#{ns}"
-          existing_dns = `dig +short #{dns_type} #{dns_lookup_name} @#{ns}`.split("\n").map! { |v| v.gsub(/\.$/,"") }    
-          Chef::Log.info("verify #{dns_name} has: "+dns_value)
-          Chef::Log.info("ns #{ns} has: "+existing_dns.sort.to_s)
-          verified = false
-          existing_dns.each do |val|
-            if val.downcase.include? dns_value
-              verified = true
-              Chef::Log.info("verified.")
+
+          if provider =~ /infoblox/
+            verified = check_record(dns_lookup_name, dns_value)
+          else
+            puts "dig +short #{dns_type} #{dns_lookup_name} @#{ns}"
+            existing_dns = `dig +short #{dns_type} #{dns_lookup_name} @#{ns}`.split('\n').map! { |v| v.gsub(/\.$/, '') }
+            Chef::Log.info("verify #{dns_name} has: " + dns_value)
+            Chef::Log.info("ns #{ns} has: " + existing_dns.sort.to_s)
+            verified = false
+            existing_dns.each do |val|
+              if val.downcase.include? dns_value
+                verified = true
+                Chef::Log.info('verified.')
+              end
             end
           end
+
           if !verified && max_retry_count > 1
             Chef::Log.info("waiting 10sec for #{ns} to get updated...")
             sleep 10
@@ -290,6 +341,7 @@ module Fqdn
           return false
         end       
       end
+      Chef::Log.info("DNS Record with Name: #{dns_name} Verified.")
       return true
     end
 
