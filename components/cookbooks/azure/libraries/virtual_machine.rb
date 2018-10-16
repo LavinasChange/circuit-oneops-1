@@ -84,10 +84,13 @@ module AzureCompute
       ssh_keys = vm_params[:ssh_key_data]
       extension_name = 'mse'
       resource_group_name = vm_params[:resource_group]
+      OOLog.info("Cygwin details: cygwin_url #{vm_params[:cygwin_url]} : cygwin_packages_url #{vm_params[:cygwin_packages_url]} ")
+
       extension_exists = @compute_service.virtual_machine_extensions.check_vm_extension_exists(resource_group_name, vm_params[:name], extension_name)
       if !extension_exists
-        encoded_cmd = encoded_script(ssh_keys)
+        encoded_cmd = encoded_script(ssh_keys, vm_params[:cygwin_url], vm_params[:cygwin_packages_url])
         start_time = Time.now.to_i
+        begin
         @compute_service.virtual_machine_extensions.create(
                 name: extension_name,
                 resource_group: resource_group_name,
@@ -100,6 +103,12 @@ module AzureCompute
                     "commandToExecute" => "powershell.exe -ExecutionPolicy Unrestricted -encodedCommand #{encoded_cmd}"
                 }
         )
+        rescue MsRestAzure::AzureOperationError => e
+          cloud_error_data = e.body.inspect if e.body.is_a?(MsRestAzure::CloudErrorData)
+          OOLog.fatal("Exception while creating VM extension #{extension_name} for #{vm_params[:name]} in resource group: #{vm_params[:resource_group]} exception: #{e.body} #{cloud_error_data}" )
+        rescue => e
+          OOLog.fatal("Error while creating VM extension: #{vm_params[:name]}. VM extension Error Message: #{e.message}")
+        end
         end_time = Time.now.to_i
         duration = end_time - start_time
         OOLog.info("Operation: virtual machine extension creation took #{duration} seconds ")
@@ -206,16 +215,32 @@ module AzureCompute
       response
     end
 
-    def encoded_script(ssh_keys)
+    def encoded_script(ssh_keys, cygwin_url, cygwin_packages_url)
       require 'base64'
       script = <<EOH
       $username = "oneops"
+      $packages = "openssh,rsync,procps,cygrunsrv,lynx,wget,curl,bzip,tar,make,gcc-c,gcc-g++,libxml2"
+      $path = 'C:\\Windows\\Temp'
+      $arg_list = "-q -n -R C:\\cygwin64 -P $packages -s #{cygwin_packages_url}"
+      try {
+      if (!(Test-Path "C:\\cygwin64\\bin\\bash.exe")) {
+        try {
+          Invoke-WebRequest -Uri #{cygwin_url} -OutFile "$path\\CygwinSetup-x86_64.exe"
+          Start-Process -PassThru -Wait -FilePath "$path\\CygwinSetup-x86_64.exe" -ArgumentList $arg_list
+        }
+        catch { exit 1 }
+      }
+      if (!(Get-Service sshd -ErrorAction Ignore)) {
+        Invoke-Command -ScriptBlock {C:\\cygwin64\\bin\\bash.exe --login -i ssh-host-config -y -c "tty ntsec" -N "sshd" -u "cyg_server" -w "#{get_random_password}"}
+        Invoke-Command -ScriptBlock {netsh advfirewall firewall add rule name="SSH-Inbound" dir=in action=allow enable=yes localport=22 protocol=tcp}
+      }
+      if ((Get-Service sshd).Status -ne "Running") {Start-Service sshd}
+      }
+      catch { exit 1 }
       Invoke-Command -ScriptBlock {net user $username "#{get_random_password}"  /add}
       Invoke-Command -ScriptBlock {net localgroup Administrators $username /add}
       $config_file = "C:/cygwin64/home/$($username)/.ssh/authorized_keys"
-      if(!(Test-Path -Path $config_file)) {
-        New-Item $config_file -type file -force
-      }
+      if(!(Test-Path -Path $config_file)) { New-Item $config_file -type file -force }
       Add-Content $config_file -Value "#{ssh_keys}"
       Invoke-Command -ScriptBlock {icacls "C:/cygwin64/home/$($username)" /setowner $username /T /C /q}
       Invoke-Command -ScriptBlock {net user azure /logonpasswordchg:yes}
@@ -229,7 +254,6 @@ EOH
       require 'securerandom'
       password = SecureRandom.base64(15)
       password = password[0..13] if password.size > 14
-      OOLog.info("secure password: #{password}")
       password
     end
 
