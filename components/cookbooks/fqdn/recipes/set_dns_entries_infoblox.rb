@@ -268,9 +268,8 @@ node[:entries].each do |entry|
       :body => JSON.dump(record))
     
   end
-  if !verify(dns_name,dns_values,ns)
-    fail_with_fault "could not verify: #{dns_name} to #{dns_values} on #{ns} after 5min."
-  end
+
+  fail_with_fault "could not verify: #{dns_name} to #{dns_values} after 5min." unless verify(dns_name, dns_values, ns)
 end
 
 
