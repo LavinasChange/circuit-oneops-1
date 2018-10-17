@@ -7,6 +7,20 @@ def exit_with_error(msg)
   Chef::Application.fatal!(msg)
 end
 
+def execute_command(command, force_failure = nil, timeout = nil)
+  sh = Mixlib::ShellOut.new(command)
+  sh.timeout = timeout if timeout
+  result = sh.run_command
+  if !result.valid_exit_codes.include?(result.exitstatus)
+    if force_failure
+      exit_with_error("Error in #{command}: #{result.stderr.gsub(/\n+/, '.')}")
+    else
+      Chef::Log.warn("Error in #{command}: #{result.stderr.gsub(/\n+/, '.')}")
+    end
+  end
+  result
+end
+
 # get enabled network using the openstack compute cloud service
 def get_enabled_network(compute_service,attempted_networks)
 

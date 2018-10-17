@@ -1,4 +1,4 @@
-src = `cat /opt/oneops/rubygems_proxy | head -n 1`
+src = `cat /opt/oneops/rubygems_proxy | head -n 1`.chomp
 source src
 
 gem 'net-ssh','~> 2.9'
