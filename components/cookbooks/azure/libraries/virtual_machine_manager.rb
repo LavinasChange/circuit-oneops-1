@@ -74,6 +74,20 @@ module AzureCompute
         false
       end
 
+      if @platform == 'windows'
+        mirror_svc = node[:workorder][:services][:mirror]
+        if !mirror_svc.nil?
+          cloud = node.workorder.cloud.ciName
+          mirror = JSON.parse(mirror_svc[cloud][:ciAttributes][:mirrors])
+          cygwin_url = mirror['cygwin_url']
+          cygwin_packages_url = mirror['cygwin_packages_url']
+        end
+
+        @cygwin_url = (cygwin_url.nil? || cygwin_url.empty?) ? "https://cygwin.com/setup-x86_64.exe" : cygwin_url
+        @cygwin_packages_url = (cygwin_packages_url.nil? || cygwin_packages_url.empty?) ? "http://cygwin.mirror.constant.com/" : cygwin_packages_url
+
+      end
+
       if @accelerated_networking.eql? 'true' && !@ostype.nil?
         OOLog.fatal "Accelerated Network is only available for CentOS 7.4" unless @ostype.eql? 'centos-7.4'
       end
@@ -216,7 +230,11 @@ module AzureCompute
       # create the virtual machine
       begin
         virtual_machine = @virtual_machine_lib.create_update(vm_hash)
-        @virtual_machine_lib.create_virtual_machine_extension(vm_hash) if @platform == 'windows'
+        if @platform == 'windows'
+          vm_hash[:cygwin_url] = @cygwin_url
+          vm_hash[:cygwin_packages_url] = @cygwin_packages_url
+          @virtual_machine_lib.create_virtual_machine_extension(vm_hash)
+        end
         virtual_machine
 
       rescue MsRestAzure::AzureOperationError => e
