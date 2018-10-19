@@ -308,16 +308,15 @@ module Fqdn
         verified = false
         provider = get_provider
         while !verified && retry_count<max_retry_count do
-          dns_lookup_name = dns_name
-          if dns_name =~ /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/
-            dns_lookup_name = $4 +'.' + $3 + '.' + $2 + '.' + $1 + '.in-addr.arpa'
-          elsif dns_name =~ Resolv::IPv6::Regex
-            dns_lookup_name = IPAddr.new(dns_name).reverse
-          end
-
           if provider =~ /infoblox/
-            verified = check_record(dns_lookup_name, dns_value)
+            verified = check_record(dns_name, dns_value)
           else
+            dns_lookup_name = dns_name
+            if dns_name =~ /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/
+              dns_lookup_name = $4 +'.' + $3 + '.' + $2 + '.' + $1 + '.in-addr.arpa'
+            elsif dns_name =~ Resolv::IPv6::Regex
+              dns_lookup_name = IPAddr.new(dns_name).reverse
+            end
             puts "dig +short #{dns_type} #{dns_lookup_name} @#{ns}"
             existing_dns = `dig +short #{dns_type} #{dns_lookup_name} @#{ns}`.split('\n').map! { |v| v.gsub(/\.$/, '') }
             Chef::Log.info("verify #{dns_name} has: " + dns_value)
