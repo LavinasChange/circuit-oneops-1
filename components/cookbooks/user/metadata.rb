@@ -97,7 +97,7 @@ attribute 'sudoer',
 attribute 'sudoer_cmds',
   :description => 'Commands for sudo',
   :data_type => 'array',
-  :default => '["tcpdump", "jmap", "jcmd", "jstat", "jstack", "strace"]',
+  :default => '["tcpdump", "jmap", "jcmd", "jstat", "jstack", "strace", "service", "chmod 644 /tmp/heapdump*.prof"]',
   :format => {
     :help => 'Enter a list of commands allowed to be executed with sudo',
     :category => '2.Options',
