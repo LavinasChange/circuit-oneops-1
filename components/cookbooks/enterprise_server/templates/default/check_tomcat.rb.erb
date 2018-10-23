@@ -7,33 +7,39 @@ require 'net/http'
 require 'rubygems'
 require 'xmlsimple'
 
-port = <%= node['enterprise_server']['server']['port']  %>
+<%
+node.set['enterprise_server']['http_or_https']='http'
+node.set['enterprise_server']['http_or_https_port']=node['enterprise_server']['server']['port']
+if node['enterprise_server']['server']['https_nio_connector_enabled'] == 'true'
+  node.set['enterprise_server']['http_or_https']='https'
+  node.set['enterprise_server']['http_or_https_port']=node['enterprise_server']['server']['ssl_port']
+end
+%>
 
-stats = XmlSimple.xml_in(`curl -s --user admin:<%= node['enterprise_server']['manager']['key'] %> "http://127.0.0.1:#{port}/manager/status?XML=true"`,{ 'KeyAttr' => 'name' })
+
+stats = XmlSimple.xml_in(`curl -k -s --user admin:<%= node['enterprise_server']['manager']['key'] %> "<%= node['enterprise_server']['http_or_https'] %>://127.0.0.1:<%= node['enterprise_server']['http_or_https_port']  %>/manager/status?XML=true"`,{ 'KeyAttr' => 'name' })
 
 arg = ARGV[0]
 perf = nil
 
-<%
-connector_name = "http-nio-#{node['enterprise_server']['server']['port']}"
-%>
-
 if arg == "RequestInfo"
-  requestInfo = stats["connector"]["\"<%= connector_name %>\""]["requestInfo"][0]
-  bytesSent = requestInfo["bytesSent"]
-  bytesReceived = requestInfo["bytesReceived"]
-  requestCount = requestInfo["requestCount"]
-  errorCount =  requestInfo["errorCount"]
-  maxTime = requestInfo["maxTime"]
-  processingTime = requestInfo["processingTime"]
+  connector= stats["connector"].keys[0]
+  requestInfo = stats["connector"][connector]["requestInfo"]
+  bytesSent = requestInfo[0]["bytesSent"]
+  bytesReceived = requestInfo[0]["bytesReceived"]
+  requestCount = requestInfo[0]["requestCount"]
+  errorCount =  requestInfo[0]["errorCount"]
+  maxTime = requestInfo[0]["maxTime"]
+  processingTime = requestInfo[0]["processingTime"]
 
   perf = "bytesSent=#{bytesSent} bytesReceived=#{bytesReceived} requestCount=#{requestCount} errorCount=#{errorCount} maxTime=#{maxTime} processingTime=#{processingTime}"
 
 elsif arg == "ThreadInfo"
-  threadInfo = stats["connector"]["\"<%= connector_name %>\""]["threadInfo"][0]
-  currentThreadsBusy = threadInfo["currentThreadsBusy"]
-  maxThreads = threadInfo["maxThreads"]
-  currentThreadCount = threadInfo["currentThreadCount"]
+  connector= stats["connector"].keys[0]
+  threadInfo = stats["connector"][connector]["threadInfo"]
+  currentThreadsBusy = threadInfo[0]["currentThreadsBusy"]
+  maxThreads = threadInfo[0]["maxThreads"]
+  currentThreadCount = threadInfo[0]["currentThreadCount"]
   percentBusy = (currentThreadsBusy.to_f/maxThreads.to_f)*100
   # no max
   if maxThreads == "-1"
@@ -43,10 +49,10 @@ elsif arg == "ThreadInfo"
   perf = "currentThreadsBusy=#{currentThreadsBusy} maxThreads=#{maxThreads} currentThreadCount=#{currentThreadCount} percentBusy=#{percentBusy}"
 
 elsif arg == "JvmInfo"
-  jvm = stats["jvm"][0]["memory"][0]
-  max = jvm["max"]
-  free = jvm["free"]
-  total = jvm["total"]
+  jvm = stats["jvm"].first()["memory"]
+  max = jvm.first()["max"]
+  free = jvm.first()["free"]
+  total = jvm.first()["total"]
   percentUsed = ((total.to_f-free.to_f) / total.to_f) * 100
 
   perf = "max=#{max} free=#{free} total=#{total} percentUsed=#{percentUsed}"
