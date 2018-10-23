@@ -128,13 +128,12 @@ if !sudoer && !node['user']['sudoer_cmds'].nil? && !node['user']['sudoer_cmds'].
   cmd_arr = []
 
   cmd_arr_raw.each do |cmd|
-    cmd1 = cmd.split(' ').first.to_s
-    cmd2 = cmd.split(' ').drop(1).join(' ')
+    cmd1, cmd2 = cmd.split(' ', 2)
     chk_cmd = "which #{cmd1}"
     sh = Mixlib::ShellOut.new(chk_cmd)
     result = sh.run_command
     if result.valid_exit_codes.include?(result.exitstatus)
-      cmd_arr.push(result.stdout.chomp + (cmd2.empty? ? '' : ' ' + cmd2))
+      cmd_arr.push(result.stdout.chomp + (cmd2 ? ' ' + cmd2 : ''))
     end
     Chef::Log.info("Checking: #{chk_cmd}, result: #{result.inspect}")
   end
