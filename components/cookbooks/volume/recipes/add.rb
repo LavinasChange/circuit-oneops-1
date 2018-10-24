@@ -377,10 +377,13 @@ ruby_block 'create-storage-non-ephemeral-volume' do
       Chef::Log.info("Volume Group Exists Already")
     end
 
+    # Use striped LV in case of multiple devices
+    striped = devices.size > 1 ? "--stripes #{devices.size} --stripesize 256" : ''
+
     `lvdisplay /dev/#{platform_name}/#{logical_name}`
 
     if $?.to_i != 0
-      execute_command("yes | lvcreate #{l_switch} #{size} -n #{logical_name} #{platform_name}",true)
+      execute_command("yes | lvcreate #{l_switch} #{size} #{striped} -n #{logical_name} #{platform_name}",true)
     else
       Chef::Log.warn("logical volume #{platform_name}/#{logical_name} already exists and hence cannot recreate .. prefer replacing compute")
     end
