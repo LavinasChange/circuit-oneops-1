@@ -150,14 +150,10 @@ end
 
 # platform-level remove cloud_dns_id for primary entry
 if ad_ci
-  arr_primary_platform_dns_name = (dns_name.split('.').first + get_customer_domain).split('.')
+  primary_platform_dns_name = dns_name.split('.').first + get_customer_domain.split('.').select{|i| (i != service_attrs[:cloud_dns_id])}.join('.')
 else
-  arr_primary_platform_dns_name = dns_name.split('.')
+  primary_platform_dns_name = dns_name.split('.').select{|i| (i != service_attrs[:cloud_dns_id])}.join('.')
 end
-
-arr_primary_platform_dns_name.delete_at(4) if arr_primary_platform_dns_name[4] == service_attrs[:cloud_dns_id]
-primary_platform_dns_name = arr_primary_platform_dns_name.join('.')
-
 node.set["primary_platform_dns_name"] = primary_platform_dns_name
 
 if node.workorder.rfcCi.ciAttributes.has_key?("ptr_enabled") &&
