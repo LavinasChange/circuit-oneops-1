@@ -41,9 +41,16 @@ dns_zone = dns_service[:ciAttributes][:zone]
 
 dc_dns_zone = ""
 remote_dc_dns_zone = ""
-if cloud_service[:ciAttributes].has_key?("gslb_site_dns_id")
-  dc_dns_zone = cloud_service[:ciAttributes][:gslb_site_dns_id]+"."
-  remote_dc_dns_zone = cloud_service[:ciAttributes][:gslb_site_dns_id]+"-remote."
+if node.workorder.rfcCi.rfcAction == "update"
+  JSON.parse(node.workorder.rfcCi.ciAttributes.vnames).keys.each do |lb_name|
+    dc_dns_zone = lb_name.split('.')[4]+"."
+    remote_dc_dns_zone = lb_name.split('.')[4]+"-remote."
+  end
+else
+  if cloud_service[:ciAttributes].has_key?("gslb_site_dns_id")
+    dc_dns_zone = cloud_service[:ciAttributes][:gslb_site_dns_id]+"."
+    remote_dc_dns_zone = cloud_service[:ciAttributes][:gslb_site_dns_id]+"-remote."
+  end
 end
 dc_dns_zone += dns_service[:ciAttributes][:zone]
 remote_dc_dns_zone += dns_service[:ciAttributes][:zone]
