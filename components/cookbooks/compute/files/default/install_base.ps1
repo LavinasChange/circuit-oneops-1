@@ -86,10 +86,6 @@ Set-Location "C:\"
 Remove-Item -Recurse -Force $chocoTempDir
 
 ## =======================================
-if ( $proxy -ne "" -and $proxy -ne $null) {
-  choco config set proxy $proxy
-}
-
 if ( $chocoRepo -ne "" -and $chocoRepo -ne $null ) {
   choco source disable -y --name="chocolatey"
   choco source add -y --name='internal' --source=$chocoRepo --priority=1
