@@ -289,16 +289,18 @@ else
     # oneops user
     grep "^oneops:" /etc/passwd 2>/dev/null
     if [ $? != 0 ] ; then
-      set -e
+      set +e
       echo "*** ADD oneops USER ***"
 
       # create oneops user & group - deb systems use addgroup
-      if [ -e /etc/lsb-release ] ; then
+      which addgroup
+      if [ $? -eq 0 ] ; then
         addgroup oneops
       else
         groupadd oneops
       fi
 
+      set -e
       useradd oneops -g oneops -m -s /bin/bash
       echo "oneops   ALL = (ALL) NOPASSWD: ALL" >> /etc/sudoers
     else
