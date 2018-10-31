@@ -147,13 +147,9 @@ module AzureCompute
         begin
 
           # connection
-          token_provider         = MsRestAzure::ApplicationTokenProvider.new(@creds[:tenant_id], @creds[:client_id], @creds[:client_secret])
-          credentials            = MsRest::TokenCredentials.new(token_provider)
-          client                 = Azure::ARM::Resources::ResourceManagementClient.new(credentials)
-          client.subscription_id = @creds[:subscription_id]
-
+          azure_client = get_azure_connection(@creds)
           # get image list
-          images                     = client.resource_groups.list_resources(customimage_resource_group)
+          images = azure_client.resource_groups.list_resources(customimage_resource_group)
 
           # find fast image
 
@@ -184,11 +180,17 @@ module AzureCompute
 
         OOLog.info('image ref: ' + image_ref )
       elsif @image_id[0].eql? 'Custom'
-        image_ref           = "/subscriptions/#{@compute_service['subscription']}/resourceGroups/#{customimage_resource_group}/providers/Microsoft.Compute/images/#{@image_id[2]}"
+        azure_client = get_azure_connection(@creds)
+
+        images = azure_client.resource_groups.list_resources(customimage_resource_group)
+        custom_image = get_custom_image(images, @ostype, @image_id)
+
+        exit_with_error "Custom Image for OS Type #{@ostype} is Not Available!" if custom_image.nil?
+
+        image_ref           = "/subscriptions/#{@compute_service['subscription']}/resourceGroups/#{customimage_resource_group}/providers/Microsoft.Compute/images/#{custom_image.name}"
         vm_hash[:image_ref] = image_ref
         pattern             = /[a-zA-Z]{1,20}-#{@ostype.gsub(/\./, "")}-\d{4}-v\d{8}-\d{4}/i
-        @fast_image_flag    = (@image_id[2] =~ pattern)
-
+        @fast_image_flag    = false
         OOLog.info('image ref: ' + image_ref )
       else
         vm_hash[:publisher] = @image_id[0]
