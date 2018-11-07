@@ -3,7 +3,7 @@ platform_name = node.workorder.box.ciName
 cloud_name = node.workorder.cloud.ciName
 asmb_name = node.workorder.payLoad.Assembly[0]["ciName"]
 gdns_cloud_service = node.workorder.services["gdns"][cloud_name]
-dc_name = gdns_cloud_service[:ciAttributes][:gslb_site_dns_id]
+dc_name = node.dc_dns_zone
 ci = node.workorder.box
 
 # q5-ems-az1-gslbsrvc

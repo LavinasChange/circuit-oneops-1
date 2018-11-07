@@ -50,4 +50,31 @@ lbs.each do |lb|
 
 end
 
+if node.workorder.rfcCi.rfcAction == "replace"
+  JSON.parse(node.workorder.rfcCi.ciAttributes.vnames).keys.each do |lb_name|
+    if lb_name.split('.')[4] != node.dc_dns_zone
+      Chef::Log.info( "deleting old lb-vserver with old gslb_site_dns_id")
+      resp_obj = JSON.parse(node.ns_conn.request(:method=>:get, :path=>"/nitro/v1/config/lbvserver/#{lb_name}").body)
+      if resp_obj["message"] !~ /No such resource/
+
+        resp_obj = JSON.parse(node.ns_conn.request(
+            :method=>:delete,
+            :path=>"/nitro/v1/config/lbvserver/#{lb_name}").body)
+
+        if resp_obj["errorcode"] != 0
+          Chef::Log.error( "delete #{lb_name} resp: #{resp_obj.inspect}")
+          exit 1
+        else
+          Chef::Log.info( "delete #{lb_name} resp: #{resp_obj.inspect}")
+        end
+
+
+      else
+        Chef::Log.info( "lb already removed: #{resp_obj.inspect}")
+      end
+
+    end
+  end
+end
+
 include_recipe "netscaler::delete_cert_key"

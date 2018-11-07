@@ -366,6 +366,15 @@ module Fqdn
       if node[:workorder][:services].has_key?("gdns")
         cloud_service =  node[:workorder][:services][:gdns][cloud_name]
       end
+      if node.workorder.rfcCi.rfcAction == "delete"
+        lbs = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Lb/}
+        if !(lbs.nil? || lbs.size==0)
+          lb = lbs.first
+          JSON.parse(lb[:ciAttributes][:vnames]).keys.each do |lb_name|
+            return true if lb_name.split('.')[4] =~ /cdc5|cdc6|cdc7|cdc8/
+          end
+        end
+      end
       if node.workorder.box.ciAttributes.has_key?("is_platform_enabled") &&
           node.workorder.box.ciAttributes.is_platform_enabled == 'true' &&
           node.workorder.payLoad.has_key?("activeclouds") && !cloud_service.nil?

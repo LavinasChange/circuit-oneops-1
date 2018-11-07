@@ -28,14 +28,6 @@ if !cloud_service[:ciAttributes].has_key?("gslb_site_dns_id")
   e.set_backtrace("")
   raise e
 end
-platform = node.workorder.box
-platform_name = platform[:ciName]
-
-env_name = node.workorder.payLoad.Environment[0]["ciName"]
-asmb_name = node.workorder.payLoad.Assembly[0]["ciName"]
-org_name = node.workorder.payLoad.Organization[0]["ciName"]
-dc_dns_zone = cloud_service[:ciAttributes][:gslb_site_dns_id]+"."+dns_service[:ciAttributes][:zone]
-dc_dns_name = [platform_name, env_name, asmb_name, org_name, dc_dns_zone].join(".")
 
 lbs = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Lb/}
 if lbs.nil? || lbs.size==0
@@ -51,6 +43,28 @@ if service_type == "HTTPS"
 end
 
 vport = listener_parts[1]
+
+platform = node.workorder.box
+platform_name = platform[:ciName]
+
+env_name = node.workorder.payLoad.Environment[0]["ciName"]
+asmb_name = node.workorder.payLoad.Assembly[0]["ciName"]
+org_name = node.workorder.payLoad.Organization[0]["ciName"]
+
+dc_dns_zone = ""
+if node.workorder.rfcCi.rfcAction == "update"
+  JSON.parse(lb[:ciAttributes][:vnames]).keys.each do |lb_name|
+    dc_dns_zone = lb_name.split('.')[4]+"."+dns_service[:ciAttributes][:zone]
+    node.set["dc_dns_zone"] = lb_name.split('.')[4]
+  end
+else
+  if cloud_service[:ciAttributes].has_key?("gslb_site_dns_id")
+    dc_dns_zone = cloud_service[:ciAttributes][:gslb_site_dns_id]+"."+dns_service[:ciAttributes][:zone]
+    node.set["dc_dns_zone"] = cloud_service[:ciAttributes][:gslb_site_dns_id]
+  end
+end
+
+dc_dns_name = [platform_name, env_name, asmb_name, org_name, dc_dns_zone].join(".")
 
 # dc lb - example: web.prod-1312.core.oneops.dfw.prod.walmart.com-SSL_BRIDGE_443tcp-lb
 dc_lb_name = [platform_name, env_name, asmb_name, org_name, dc_dns_zone].join(".") + 

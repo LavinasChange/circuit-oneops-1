@@ -38,7 +38,7 @@ def delete_gslb_service_by_name(gslb_service_name)
   # delete monitor for gslb service / vip
   cloud_name = node.workorder.cloud.ciName
   gdns_cloud_service = node.workorder.services['gdns'][cloud_name]
-  dc_name = gdns_cloud_service[:ciAttributes][:gslb_site_dns_id]
+  dc_name = node.dc_dns_zone
   vport = get_gslb_port
   monitor_name = node.workorder.box.ciId.to_s+"-#{vport}-gmon"
   # Get all Lbmonitor bindings with gslbsvc and unbind them so delete of Lbmonitor can happen
@@ -121,7 +121,7 @@ def get_gslb_service_name
   ci = node.workorder.payLoad.DependsOn[0]
   asmb_name = node.workorder.payLoad.Assembly[0]["ciName"]
   gdns_cloud_service = node.workorder.services["gdns"][cloud_name]
-  dc_name = gdns_cloud_service[:ciAttributes][:gslb_site_dns_id]
+  dc_name = node.dc_dns_zone
   
   return [env_name, platform_name, asmb_name, dc_name, ci["ciId"].to_s, "gslbsrvc"].join("-")
 end
@@ -133,7 +133,7 @@ def get_gslb_service_name_by_platform
   ci = node.workorder.box
   asmb_name = node.workorder.payLoad.Assembly[0]["ciName"]
   gdns_cloud_service = node.workorder.services["gdns"][cloud_name]
-  dc_name = gdns_cloud_service[:ciAttributes][:gslb_site_dns_id]
+  dc_name = node.dc_dns_zone
   
   return [env_name, platform_name, asmb_name, dc_name, ci["ciId"].to_s, "gslbsrvc"].join("-")
 end
@@ -195,7 +195,7 @@ def create_gslb_service
   conn = @new_resource.connection
   cloud_name = node.workorder.cloud.ciName
   gdns_cloud_service = node.workorder.services["gdns"][cloud_name]
-  dc_name = gdns_cloud_service[:ciAttributes][:gslb_site_dns_id]
+  dc_name = node.dc_dns_zone
   
   Chef::Log.info("gslb_service_name: #{gslb_service_name}")
 
