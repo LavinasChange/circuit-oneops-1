@@ -87,7 +87,7 @@ def is_propagate_update
   return false
 end
 
-def find_latest_fast_image(images, pattern, pattern_snap)
+def find_latest_image(images, pattern, pattern_snap)
   return_image = nil
   if pattern_snap.nil?
     pattern_snap = /(?!x)x/
@@ -121,7 +121,9 @@ def get_image(images, flavor, flag_FAST_IMAGE, flag_TESTING_MODE, default_image,
     # if testing mode true; consider snapshots but still take the latest image
     # else do not consider snapshots
     flag_TESTING_MODE.to_s.downcase == "true" ? pattern_snap = nil : pattern_snap = /snapshot/i
-    return_image = find_latest_fast_image(images, pattern, pattern_snap)
+
+    filtered_fast_images = images.select { |image| image unless image.name.include? 'custom-' }
+    return_image = find_latest_image(filtered_fast_images, pattern, pattern_snap)
 
     if return_image.nil?
       return default_image
@@ -133,4 +135,30 @@ def get_image(images, flavor, flag_FAST_IMAGE, flag_TESTING_MODE, default_image,
     return default_image
 
   end
+end
+
+def get_azure_connection(creds)
+  # connection
+  token_provider         = MsRestAzure::ApplicationTokenProvider.new(creds[:tenant_id], creds[:client_id], creds[:client_secret])
+  credentials            = MsRest::TokenCredentials.new(token_provider)
+  client                 = Azure::ARM::Resources::ResourceManagementClient.new(credentials)
+  client.subscription_id = creds[:subscription_id]
+
+  client
+end
+
+def get_custom_image(images, ostype, image_id)
+  # First filter out images based on OS Type
+  filtered_custom_images = images.select { |image| image.name.include? "custom-#{ostype.tr('.', '')}-" }
+
+  return nil if filtered_custom_images.size.zero?
+
+  # If the image ID contains ID of a specific version of the OS. For e.g., Custom:Redhat:7.3:xxxxx
+  return filtered_custom_images.select { |image| image.name.include? "-#{image_id[3]}" }.first unless image_id[3].eql? 'latest'
+
+  # Find the latest image uploaded for that OS type
+  pattern = /[a-zA-Z]{1,20}-#{ostype.tr('.', '')}-\d{4}-v\d{8}-\d{4}/i
+
+  custom_image = find_latest_image(filtered_custom_images, pattern, nil)
+  custom_image
 end
