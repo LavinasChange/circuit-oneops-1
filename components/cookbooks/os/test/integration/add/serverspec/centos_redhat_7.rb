@@ -260,7 +260,7 @@ end
 # Check against yum repos
 yum_repos_url = `yum repolist enabled -v | grep Repo-baseurl | awk  '{print $3}'`.split
 yum_repos_url.each do |yum_url|
-  describe command("curl -I #{yum_url}") do
+  describe command("curl -k -I #{yum_url}") do
     its(:exit_status) { should eq 0 }
     its(:stdout) { should match /200 OK/ }
   end
