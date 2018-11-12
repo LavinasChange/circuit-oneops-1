@@ -74,3 +74,23 @@ describe "RAID array #{raid_name}" do
     expect(out.chomp.strip).to eql(raid_level)
   end
 end if raid_level != 'no-raid'
+
+#Should create striped LV if multiple slices are available
+if $storage && $storage['ciAttributes']['slice_count'].to_i > 1 &&
+   raid_level == 'no-raid'
+
+  describe "Logical volume #{logical_name}" do
+    let (:cmd) { "lvs --noheadings --segments #{lvm_dev_id} | awk '{print $5}'" }
+    let (:lvtype) { execute_command(cmd).stdout.chomp }
+    it "is striped" do
+      expect(lvtype).to eql('striped')
+    end
+  end
+end
+
+# packages
+%w(parted lvm2).each do |pkg|
+  describe package(pkg) do
+    it { should be_installed }
+  end
+end unless is_windows

@@ -114,7 +114,7 @@ if storage.nil? && token_class =~ /azure/ && attrs[:skip_vol] == 'true'
   return
 end
 
-package 'lvm2'
+%w(parted lvm2).each { |pkg| package pkg }
 package 'mdadm' do
   not_if{mode == 'no-raid'}
 end
