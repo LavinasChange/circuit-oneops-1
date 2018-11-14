@@ -22,7 +22,6 @@ attribute 'usergroup',
 
 attribute 'username',
   :description => "Username",
-  #:required => "required",
   :format => {
     :important => true,
     :help => 'Username',
@@ -143,7 +142,6 @@ attribute 'password',
 
 attribute 'usermap',
   :description => 'Usernames and SSH keys map',
-  :required => 'required',
   :default => '{}',
   :data_type => 'hash',
   :format => {
