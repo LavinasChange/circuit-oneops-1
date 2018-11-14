@@ -642,13 +642,29 @@ resource "job",
   :design => true,
   :requires => { "constraint" => "0..*" }
 
-resource "objectstore",
-  :cookbook => "oneops.1.objectstore",
+resource 'objectstore',
+  :cookbook => 'oneops.1.objectstore',
   :design => true,
-  :requires => {"constraint" => "0..1",:services => "filestore"},
-  :attributes => {
-    "username" => "",
-    "password" => ""
+  :requires => {'constraint' => '0..1',:services => 'filestore'},
+  :payloads => {
+    'compute_service' => {
+     'description' => 'Compute Service',
+     'definition' => '
+         { "returnObject": false,
+           "returnRelation": false,
+           "relationName": "base.DeployedTo",
+           "direction": "from",
+           "targetClassName": "account.Cloud",
+           "relations": [
+             { "returnObject": true,
+               "returnRelation": false,
+               "relationName": "base.Provides",
+               "relationAttrs":[{"attributeName":"service", "condition":"eq", "avalue":"compute"}],
+               "direction": "from"
+             }
+           ]
+         }'
+   }
   }
 
 resource "storage",
