@@ -1,4 +1,5 @@
 # included via os::add
+require 'securerandom'
 Chef::Log.info("Installing logstash-forwarder...")
 
 #Setting variables
@@ -8,6 +9,7 @@ cert_path = "/etc/logstash/cert/perf-agent-lsf.crt"
 root_user = 'root'
 root_group = 'root'
 exe_file = 'logstash-forwarder'
+timeout = SecureRandom.random_number(n = 10) + 14
 if is_windows
   root_user = (node.cloud_provider =~ /azure/) ? 'azure' : 'Administrator'
   root_group = 'Administrators'
@@ -61,6 +63,7 @@ template "/etc/logstash-forwarder/perf-agent-lsf.conf" do
   mode 0640
   variables({
     :destination => destination,
+    :timeout => timeout,
     :cert_path=> cert_path,
     :ip => node[:ipaddress]
   })
