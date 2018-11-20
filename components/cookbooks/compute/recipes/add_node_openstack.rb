@@ -485,7 +485,11 @@ ruby_block 'set node network params' do
         if server.addresses.has_key?(net)
           addrs = server.addresses[net]
           #check multiple ips (exception: possible to have 2 ip entries (public, private) after initial deployment)
-          exit_with_error "multiple ips returned" if addrs.size > 1 && rfcCi["rfcAction"] != "update"
+          if addrs.size > 1 && rfcCi['rfcAction'] != 'update'
+            Chef::Log.info('Multiple ips returned - Deleting the VM')
+            run_context.include_recipe 'compute::delete'
+            exit_with_error 'multiple ips returned'
+          end
           private_ip = addrs.first["addr"]
           break
         end
