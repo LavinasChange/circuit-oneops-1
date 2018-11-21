@@ -288,6 +288,20 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
     mode '0755'
   end
 
+  template "#{node['data_dir_path']}/log4j2.xml" do
+    source 'log4j2.xml.erb'
+    owner node['solr']['user']
+    group node['solr']['user']
+    mode '0755'
+  end
+ 
+  template "#{node['data_dir_path']}/log4j2-console.xml" do
+    source 'log4j2-console.xml.erb'
+    owner node['solr']['user']
+    group node['solr']['user']
+    mode '0755'
+  end
+
   if (node['enable_authentication'] != nil && node['enable_authentication'] == "true")
     template "#{node['data_dir_path']}/http_client.properties" do
       source 'http_client.properties.erb'
