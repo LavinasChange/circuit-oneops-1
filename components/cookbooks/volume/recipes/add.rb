@@ -181,7 +181,6 @@ ruby_block 'create-ephemeral-volume-on-azure-vm' do
     restore_script_dir = '/opt/oneops/azure-restore-ephemeral-mntpts'
     initial_mountpoint = '/mnt/resource'
     script_file_path   = "#{restore_script_dir}/#{logical_name}.sh"
-    ephemeral_device   = '/dev/sdb1'
     rc_file_path       = '/etc/rc.d/rc.local'
 
     # Create restore directory with path
@@ -198,8 +197,8 @@ if [ $swapfile ]; then
   swapoff $swapfile
 fi
 umount #{initial_mountpoint}
-pvcreate -f #{ephemeral_device}
-vgcreate #{platform_name}-eph #{ephemeral_device}
+pvcreate -f /dev/disk/azure/resource-part1
+vgcreate #{platform_name}-eph /dev/disk/azure/resource-part1
 "yes" | lvcreate #{l_switch} #{size} -n #{logical_name} #{platform_name}-eph
 
 mount -t #{_fstype} -o #{_options} /dev/#{platform_name}-eph/#{logical_name} #{_mount_point}
