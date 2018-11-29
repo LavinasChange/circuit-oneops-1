@@ -118,6 +118,9 @@ end
 package 'mdadm' do
   not_if{mode == 'no-raid'}
 end
+package 'xfsprogs' do
+  only_if { _fstype == 'xfs' }
+end
 
 # need ruby block so package resource above run first
 ruby_block 'create-iscsi-volume-ruby-block' do
@@ -428,10 +431,6 @@ ruby_block 'create-storage-non-ephemeral-volume' do
 
     execute_command("vgchange -ay #{platform_name}",true)
   end
-end
-
-package "xfsprogs" do
-  only_if { _fstype == "xfs" }
 end
 
 ruby_block 'filesystem' do
