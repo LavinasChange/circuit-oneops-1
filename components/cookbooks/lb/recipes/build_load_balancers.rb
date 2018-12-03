@@ -90,6 +90,7 @@ has_other_cloud_in_dc_active = false
 if node.workorder.box.ciAttributes.has_key?("is_platform_enabled") &&
     node.workorder.box.ciAttributes.is_platform_enabled == 'true' &&
     node.workorder.payLoad.has_key?("primaryactiveclouds") &&
+    node.key?('dc_dns_zone') &&
     !(node.dc_dns_zone =~ /cdc5|cdc6|cdc7|cdc8/)
 
   node.workorder.payLoad["primaryactiveclouds"].each do |lb_service|
