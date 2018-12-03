@@ -199,9 +199,14 @@ swapfile=$(cat /proc/swaps | grep #{initial_mountpoint} | awk '{print $1}')
 if [ $swapfile ]; then
   swapoff $swapfile
 fi
+root_device=$(mount -l | grep "on / " | awk '{print $1}')
+root_partition=$(sed "s=/dev/==g" <<<"$root_device")
+resource_partition=$(lsblk -sd | grep part | grep -v $root_partition | head -n 1 | awk '{print $1}')
+resource_device="/dev/$resource_partition"
+
 umount #{initial_mountpoint}
-pvcreate -f /dev/disk/azure/resource-part1
-vgcreate #{platform_name}-eph /dev/disk/azure/resource-part1
+pvcreate -f $resource_device
+vgcreate #{platform_name}-eph $resource_device
 "yes" | lvcreate #{l_switch} #{size} -n #{logical_name} #{platform_name}-eph
 
 mount -t #{_fstype} -o #{_options} /dev/#{platform_name}-eph/#{logical_name} #{_mount_point}
