@@ -35,3 +35,4 @@ end
 include_recipe 'solr-collection::upload_zk_config'
 include_recipe 'solr-collection::collection'
 include_recipe 'solr-collection::monitor'
+include_recipe 'solr-collection::replica_distribution_checker'

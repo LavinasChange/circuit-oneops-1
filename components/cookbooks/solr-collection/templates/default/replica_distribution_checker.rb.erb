@@ -1,0 +1,49 @@
+#!/usr/bin/env ruby
+
+require "/opt/solr-recipes/replica-distributor/solr_apis.rb"
+require 'json'
+
+# A method for symbolizing the keys of a nested hashmap Example: {"x" => {"y" => "z" } }   Changes to {:x => {:y => "z" } }
+def symbolize(obj)
+  return obj.inject({}){|memo,(k,v)| memo[k.to_sym] =  symbolize(v); memo} if obj.is_a? Hash
+  return obj.inject([]){|memo,v    | memo           << symbolize(v); memo} if obj.is_a? Array
+  return obj
+end
+
+# Getting the params
+# 1. collection name through the solrcloud.rb pack monitor section in solr-collection resource
+# 2. clouds_payload from the replica_distribution_checker.rb script in the recipes
+# 3. computes_payload from the replica_distribution_checker.rb script in the recipes
+# 4. port_num from the replica_distribution_checker.rb script in the recipes
+collection_name = ARGV[0].to_s
+clouds_payload =  '<%= @clouds_payload %>'
+computes_payload = '<%= @computes_payload %>'
+port_num = '<%= @port_num %>'
+
+# Converting a string-array to a normal array structure. Example '['a','b','c']' to ['a','b','c']
+clouds_payload=JSON.parse(clouds_payload)
+computes_payload=JSON.parse(computes_payload)
+
+# Using the symbolize method to symbolize the contents of cloud_payload. clouds_payload is an array of hashmaps(which are having keys which are strings).
+# This part of the code will create a new array clouds_payload_arr which will be an array of hashmaps(which will now have keys as symbols).
+clouds_payload_arr=[]
+for payload in clouds_payload
+  clouds_payload_arr.push(symbolize(payload))
+end
+
+# Using the symbolize method to symbolize the contents of computes_payload. computes_payload is an array of hashmaps(which are having keys which are strings).
+# This part of the code will create a new array computes_payload_arr which will be an array of hashmaps(which will now have keys as symbols).
+computes_payload_arr=[]
+for payload in computes_payload
+  computes_payload_arr.push(symbolize(payload))
+end
+
+puts "clouds_payload_arr #{clouds_payload_arr.to_s}"
+puts "computes_payload_arr #{computes_payload_arr.to_s}"
+puts "collection-name #{collection_name.to_s}"
+
+# calling the replica_tomove_count in the solr_apis.rb code
+total_replicas_to_move = replica_tomove_count(collection_name, clouds_payload_arr, computes_payload_arr, port_num.to_i)
+
+# This is the format with which Oneops identifies that `total_replicas_to_move` is the value its looking for as a metric (A pipe symbol in a puts expression is needed)
+puts "Number of replicas to move |total_replicas_to_move=#{total_replicas_to_move}"
