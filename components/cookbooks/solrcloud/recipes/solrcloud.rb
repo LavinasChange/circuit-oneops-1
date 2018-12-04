@@ -32,7 +32,20 @@ end
 solr_package_type = "solr"
 solr_format = "tgz"
 
-solr_download_path = "/tmp";
+# creating the download directory for Solr
+solr_download_path = "/app/solr_download_dir";
+Chef::Log.info("Checking if solr_download_dir directory exists. This fix is in place since the earlier location of download directory was /tmp. This path is not appropriate
+for downloading the tgz file of Solr, since it would be deleted after a small period of time. This fix ensures that the tgz file will remain safe at this location until a compute replace taskes
+place")
+bash 'creating the download directory for Solr' do
+  code <<-EOH
+    mkdir #{solr_download_path}
+    sudo chmod -R o-w #{solr_download_path}
+    echo Creating the download directory for Solr
+  EOH
+  not_if { ::File.directory?(solr_download_path)}
+end
+
 solr_file_name = "#{solr_package_type}-"+node['solr_version']+".#{solr_format}"
 solr_file_woext = "#{solr_package_type}-"+node['solr_version']
 solr_url = "#{node['solr_base_url']}/#{solr_package_type}/"+node['solr_version']+"/#{solr_file_name}"
@@ -45,6 +58,7 @@ oo_environment_name = ns_path[3]
 oo_platform = ns_path[5]
 
 # Download solr package from path #{solr_url}
+Chef::Log.info("Checking if solr_tgz file has been already downloaded and placed in the /app/solr_download_dir directory or not")
 remote_file solr_filepath do
   source "#{solr_url}"
   owner "#{node['solr']['user']}"
