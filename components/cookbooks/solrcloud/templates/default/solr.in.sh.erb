@@ -131,7 +131,12 @@ SOLR_HOME="<%= node["data_dir_path"] %>/data"
 # Solr provides a default Log4J configuration properties file in server/resources
 # however, you may want to customize the log settings and file appender location
 # so you can point the script to use a different log4j.properties file
-LOG4J_PROPS="<%= node["data_dir_path"] %>/log4j.properties"
+
+<% if node['solr_version'].to_s=='7.5.0' %>
+    LOG4J_PROPS="<%= node["data_dir_path"] %>/log4j2.xml"
+<% else %>
+    LOG4J_PROPS="<%= node["data_dir_path"] %>/log4j.properties"
+<% end %>
 
 # Location where Solr should write logs to; should agree with the file appender
 # settings in server/resources/log4j.properties
