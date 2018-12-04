@@ -169,7 +169,7 @@ node[:entries].each do |entry|
   dns_name_for_lookup = dns_name.gsub("\*","abc123")
   Chef::Log.info("#{dns_name_for_lookup} new values: "+dns_values.sort.inspect)
 
-  existing_dns = get_existing_dns(dns_name,ns)
+  existing_dns = get_existing_dns_from_infoblox(dns_name, dns_values)
 
   Chef::Log.info("previous entries: #{node.previous_entries}")
   Chef::Log.info("deletable_values: #{deletable_values}")

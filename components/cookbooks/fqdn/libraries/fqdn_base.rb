@@ -127,8 +127,47 @@ module Fqdn
       Chef::Log.info("is_hijackable: #{is_hijackable}")
       return is_hijackable
     end
-    
-    
+
+    def get_existing_dns_from_infoblox(dns_name, dns_values)
+      response = node.infoblox_conn.request(:method => :get, :path => '/wapi/v1.0/network')
+
+      exit_with_error "Infoblox Connection Unsuccessful. Response: #{response.inspect}" if response.status != 200
+
+      existing_dns = []
+
+      api_version = 'v1.0'
+      api_version = 'v1.2' if dns_name =~ Resolv::IPv6::Regex # ipv6addr attribute is recognized only in infoblox api version >= 1.1
+
+      dns_values.each do |dns_value|
+        dns_val = dns_value.is_a?(String) ? [dns_value] : dns_value
+        dns_type = get_record_type(dns_name, dns_val)
+        record_hash = get_record_hash(dns_name, dns_value, dns_type)
+
+        records = JSON.parse(node.infoblox_conn.request(:method => :get, :path => "/wapi/#{api_version}/record:#{dns_type}", :body => JSON.dump(record_hash)).body)
+
+        records.each do |record|
+          existing_dns.push(extract_dns_entry(record, dns_type))
+        end
+      end
+      Chef::Log.info("Existing DNS Entries: #{existing_dns.inspect}")
+      existing_dns
+    end
+
+    def extract_dns_entry(dns_record, dns_type)
+      case dns_type
+      when 'cname'
+        dns_record['canonical']
+      when 'a'
+        dns_record['ipv4addr']
+      when 'aaaa'
+        dns_record['ipv6addr']
+      when 'ptr'
+        dns_record['ptrdname']
+      when 'txt'
+        dns_record['text']
+      end
+    end
+
     def get_existing_dns (dns_name,ns)
       existing_dns = Array.new
       if dns_name =~ /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/
