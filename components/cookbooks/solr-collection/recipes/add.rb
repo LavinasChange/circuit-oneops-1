@@ -20,6 +20,8 @@ end
 
 if node['action_name'] == 'replace'
   node['skip_collection_comp_execution'] == "true"
+  Chef::Log.info("Skipping execution of solr-collection component for node-replace event")
+  return
 end
 
 if (node['skip_collection_comp_execution'] == "true")
