@@ -36,5 +36,3 @@ taskscheduler task_scheduler.task_name do
   days_of_week task_scheduler.days_of_week
   weeks_interval task_scheduler.weeks_interval.to_i
 end
-
-include_recipe 'taskscheduler::restart_task'
