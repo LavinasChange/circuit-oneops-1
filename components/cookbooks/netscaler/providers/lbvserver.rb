@@ -227,12 +227,14 @@ def create_lbvserver
 
     if @new_resource.stickiness == "true"
       if ["SSL","HTTPS","HTTP"].include?(@new_resource.servicetype.upcase)
-        lbvserver[:persistenceType] = "COOKIEINSERT"
+        lbvserver[:persistenceType] = @new_resource.persistence_type.upcase
+        lbvserver[:timeout] = 360
+      elsif ["TCP"].include?(@new_resource.servicetype.upcase)
+        lbvserver[:persistenceType] = "NONE"
       else
-        lbvserver[:persistenceType] = "SOURCEIP"                
+        lbvserver[:persistenceType] = "SOURCEIP"
+        lbvserver[:timeout] = 360
       end
-      lbvserver[:timeout] = 360      
-        
     end
     
     if !@new_resource.backupvserver.nil? && !@new_resource.backupvserver.empty?
@@ -325,13 +327,20 @@ def create_lbvserver
       
       if @new_resource.stickiness == "true"
           if node.workorder.rfcCi.ciAttributes.enable_lb_group == "false"
-            lbvserver[:persistenceType] = @new_resource.persistence_type.upcase
-            lbvserver[:timeout] = 360
+            if ["SSL","HTTPS","HTTP"].include?(@new_resource.servicetype.upcase)
+              lbvserver[:persistenceType] = @new_resource.persistence_type.upcase
+              lbvserver[:timeout] = 360
+            elsif ["TCP"].include?(@new_resource.servicetype.upcase)
+              lbvserver[:persistenceType] = "NONE"
+            else
+              lbvserver[:persistenceType] = "SOURCEIP"
+              lbvserver[:timeout] = 360
+            end
           end
       else
         lbvserver[:persistenceType] = "NONE"
-      end        
-            
+      end
+
     end
                
     req = '{ "lbvserver": ['+JSON.dump(lbvserver)+'] }'

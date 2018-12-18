@@ -20,7 +20,7 @@
     # acknowledgement from the downstream server. If an timeout is reached,
     # logstash-forwarder will assume the connection or server is bad and
     # will connect to a server chosen at random from the servers list.
-    "timeout": 20
+    "timeout": <%= @timeout %>
   },
 "files": [
     # An array of hashes. Each hash tells what paths to watch and

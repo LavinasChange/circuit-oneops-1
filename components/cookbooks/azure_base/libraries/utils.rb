@@ -134,20 +134,75 @@ module Utils
   end
 
   def get_resource_tags(node)
-
     tags = {}
+    ns_path_parts = node['workorder']['rfcCi']['nsPath'].split('/')
+    organization = ns_path_parts[1]
+    assembly = ns_path_parts[2]
+    environment = ns_path_parts[3]
+    platform = ns_path_parts[5]
 
-    azuretagkeys = ["applicationname", "notificationdistlist", "costcenter", "platform", "deploymenttype", "environmentinfo", "sponsorinfo", "ownerinfo"]
+    azuretagkeys = %w[notificationdistlist costcenter deploymenttype sponsorinfo CCCID]
 
     org_tags = JSON.parse(node['workorder']['payLoad']['Organization'][0]['ciAttributes']['tags']).select {|k, v| azuretagkeys.include?(k)}
     assembly_tags = JSON.parse(node['workorder']['payLoad']['Assembly'][0]['ciAttributes']['tags']).select {|k, v| azuretagkeys.include?(k)}
-    assembly_owner_tag = node['workorder']['payLoad']['Assembly'][0]['ciAttributes']["owner"] || "Unknown"
 
     tags.merge!(org_tags)
     tags.merge!(assembly_tags)
-    tags['owner'] = assembly_owner_tag
+
+    tags = get_costcenter_tag(tags, assembly_tags, org_tags)
+
+    # If assembly owner e-mail is unavailable, we use organization owner's e-mail
+    assembly_owner = node['workorder']['payLoad']['Assembly'][0]['ciAttributes']['owner'] || node['workorder']['payLoad']['Organization'][0]['ciAttributes']['owner']
+
+    tags = get_notificationdistlist_tag(tags, assembly_owner)
+
+    tags['owner'] = assembly_owner unless assembly_owner.to_s.empty?
+    tags['ownerinfo'] = organization
+    tags['applicationname'] = assembly
+    tags['environmentinfo'] = environment
+    tags['platform'] = platform
 
     return tags
+  end
+
+  def get_notificationdistlist_tag(tags, assembly_owner)
+    if (tags.key? 'notificationdistlist') && tags['notificationdistlist'].empty?
+      if assembly_owner.to_s.empty?
+        tags.delete('notificationdistlist')
+      else
+        tags['notificationdistlist'] = assembly_owner
+      end
+    elsif !tags.key? 'notificationdistlist'
+      tags['notificationdistlist'] = assembly_owner unless assembly_owner.to_s.empty?
+    end
+
+    tags
+  end
+
+  def get_costcenter_tag(tags, assembly_tags, org_tags)
+    costcenter = nil
+
+    # 'costcenter' tag is first looked up in the assembly tags (first 'costcenter' then 'CCCID' tag)
+    # If not found in assembly tags, we look in the organization tags. Same order.
+    if (assembly_tags.key? 'costcenter') && !assembly_tags['costcenter'].empty?
+      costcenter = assembly_tags['costcenter']
+    elsif (assembly_tags.key? 'CCCID') && !assembly_tags['CCCID'].empty?
+      costcenter = assembly_tags['CCCID']
+    elsif (org_tags.key? 'costcenter') && !org_tags['costcenter'].empty?
+      costcenter = org_tags['costcenter']
+    elsif (org_tags.key? 'CCCID') && !org_tags['CCCID'].empty?
+      costcenter = org_tags['CCCID']
+    end
+
+    if costcenter.to_s.empty?
+      tags.delete('costcenter')
+    else
+      tags['costcenter'] = costcenter
+    end
+
+    tags.delete('CCCID')
+
+    tags
   end
 
   def is_new_cloud(node)
@@ -229,6 +284,8 @@ module Utils
                   :get_fault_domains,
                   :get_update_domains,
                   :get_resource_tags,
+                  :get_notificationdistlist_tag,
+                  :get_costcenter_tag,
                   :is_new_cloud,
                   :get_resource_group,
                   :get_nsg_rg_name,

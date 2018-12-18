@@ -20,6 +20,24 @@ node.set['storage_account'] = storage_account if vm_client.availability_set_resp
 if vm_client.availability_set_response.sku_name == 'Aligned'
   vm_storage_profile = AzureCompute::StorageProfile.new(vm_client.creds) 
   vm_storage_profile.delete_managed_osdisk(vm_client.resource_group_name, os_disk)
+
+  # ensure that the deleted managed disk completely vanishes and does not show up in the 'list_resources' method
+  rg_manager = AzureBase::ResourceGroupManager.new(node)
+
+  max_retries = 6
+  counter = 0
+
+  loop do
+    resources = rg_manager.list_resources
+    break unless resources.any? { |resource| resource.name.eql? os_disk }
+    exit_with_error 'Managed Disk Still Exists After Max Retries. Exiting!' if counter == max_retries
+
+    OOLog.info('Managed Disk Still Getting Listed After Deletion. Sleeping for 20 Seconds...')
+    sleep 20
+    counter += 1
+  end
+
+  OOLog.info('Managed Disk Deleted Successfully!')
 end
 
 

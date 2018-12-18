@@ -48,10 +48,6 @@ variable "deployContext",
          :description => 'The context in which the app needs to be deployed',
          :value => ''
 
-variable "runOnEnv",
-         :description => 'Environment run configuration',
-         :value => ''
-
 #Enabling default http,https,ajp
 resource 'secgroup',
          :cookbook   => 'oneops.1.secgroup',

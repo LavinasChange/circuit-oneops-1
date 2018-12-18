@@ -199,7 +199,7 @@ class AzureSpecUtils < SpecUtils
     end
 
     imagidcustom = image_id.split(':')
-    imagidcustom.eql? 'Custom'
+    imagidcustom[0].eql? 'Custom'
   end
 
   def is_unmanaged_vm

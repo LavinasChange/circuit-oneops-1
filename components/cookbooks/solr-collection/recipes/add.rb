@@ -18,10 +18,13 @@ if skip_compute > 0
   return
 end
 
+if node['action_name'] == 'replace'
+  node['skip_collection_comp_execution'] == "true"
+  Chef::Log.info("Skipping execution of solr-collection component for node-replace event")
+  return
+end
+
 if (node['skip_collection_comp_execution'] == "true")
-    # Refreshing the monitors when the compute is replaced in order to monitor the collection which has created.
-    # It has no impact when the computes are added.
-    include_recipe 'solr-collection::monitor'
     Chef::Log.info("Skipping execution of solr-collection component. Since skip_collection_comp_execution flag is enabled.")
     return
 end
@@ -38,3 +41,4 @@ end
 include_recipe 'solr-collection::upload_zk_config'
 include_recipe 'solr-collection::collection'
 include_recipe 'solr-collection::monitor'
+include_recipe 'solr-collection::replica_distribution_checker'

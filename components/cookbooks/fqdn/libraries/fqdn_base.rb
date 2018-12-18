@@ -127,8 +127,47 @@ module Fqdn
       Chef::Log.info("is_hijackable: #{is_hijackable}")
       return is_hijackable
     end
-    
-    
+
+    def get_existing_dns_from_infoblox(dns_name, dns_values)
+      response = node.infoblox_conn.request(:method => :get, :path => '/wapi/v1.0/network')
+
+      exit_with_error "Infoblox Connection Unsuccessful. Response: #{response.inspect}" if response.status != 200
+
+      existing_dns = []
+
+      api_version = 'v1.0'
+      api_version = 'v1.2' if dns_name =~ Resolv::IPv6::Regex # ipv6addr attribute is recognized only in infoblox api version >= 1.1
+
+      dns_values.each do |dns_value|
+        dns_val = dns_value.is_a?(String) ? [dns_value] : dns_value
+        dns_type = get_record_type(dns_name, dns_val)
+        record_hash = get_record_hash(dns_name, dns_value, dns_type)
+
+        records = JSON.parse(node.infoblox_conn.request(:method => :get, :path => "/wapi/#{api_version}/record:#{dns_type}", :body => JSON.dump(record_hash)).body)
+
+        records.each do |record|
+          existing_dns.push(extract_dns_entry(record, dns_type))
+        end
+      end
+      Chef::Log.info("Existing DNS Entries: #{existing_dns.inspect}")
+      existing_dns
+    end
+
+    def extract_dns_entry(dns_record, dns_type)
+      case dns_type
+      when 'cname'
+        dns_record['canonical']
+      when 'a'
+        dns_record['ipv4addr']
+      when 'aaaa'
+        dns_record['ipv6addr']
+      when 'ptr'
+        dns_record['ptrdname']
+      when 'txt'
+        dns_record['text']
+      end
+    end
+
     def get_existing_dns (dns_name,ns)
       existing_dns = Array.new
       if dns_name =~ /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/
@@ -245,8 +284,53 @@ module Fqdn
       end
       return values
     end
-        
-    
+
+    def get_record_hash(dns_name, dns_value, dns_type)
+      record = { :name => dns_name.downcase }
+      case dns_type
+      when 'cname'
+        record['canonical'] = dns_value
+      when 'a'
+        record['ipv4addr'] = dns_value
+      when 'aaaa'
+        record['ipv6addr'] = dns_value
+      when 'ptr'
+        if dns_name =~ Resolv::IPv4::Regex
+          record = { 'ipv4addr' => dns_name, 'ptrdname' => dns_value }
+        elsif dns_name =~ Resolv::IPv6::Regex
+          record = { 'ipv6addr' => dns_name, 'ptrdname' => dns_value }
+        end
+      when 'txt'
+        record = { 'name' => dns_name, 'text' => dns_value }
+      end
+      record
+    end
+
+    def check_record(dns_name, dns_value)
+      res = node.infoblox_conn.request(:method => :get, :path => '/wapi/v1.0/network')
+
+      exit_with_error "Infoblox Connection Unsuccessful. Response: #{res.inspect}" if res.status != 200
+
+      Chef::Log.info('Infoblox Connection Successful.')
+
+      api_version = 'v1.0'
+      api_version = 'v1.2' if dns_name =~ Resolv::IPv6::Regex # ipv6addr attribute is recognized only in infoblox api version >= 1.1
+
+      dns_val = dns_value.is_a?(String) ? [dns_value] : dns_value
+      dns_type = get_record_type(dns_name, dns_val)
+      record_hash = get_record_hash(dns_name, dns_value, dns_type)
+
+      records = JSON.parse(node.infoblox_conn.request(:method => :get, :path => "/wapi/#{api_version}/record:#{dns_type}", :body => JSON.dump(record_hash)).body)
+
+      if records.size.zero?
+        Chef::Log.info('check_record: DNS Record Entry Already Deleted.')
+        return false
+      else
+        Chef::Log.info('check_record: DNS Record Entry is Available.')
+        return true
+      end
+    end
+
     def verify(dns_name, dns_values, ns, max_retry_count=30)
       if dns_values.count > max_retry_count
         max_retry_count = dns_values.count + 1
@@ -261,25 +345,30 @@ module Fqdn
         end
         
         verified = false
+        provider = get_provider
         while !verified && retry_count<max_retry_count do
-          dns_lookup_name = dns_name
-          if dns_name =~ /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/
-            dns_lookup_name = $4 +'.' + $3 + '.' + $2 + '.' + $1 + '.in-addr.arpa'
-          elsif dns_name =~ Resolv::IPv6::Regex
-            dns_lookup_name = IPAddr.new(dns_name).reverse
-          end
-          
-          puts "dig +short #{dns_type} #{dns_lookup_name} @#{ns}"
-          existing_dns = `dig +short #{dns_type} #{dns_lookup_name} @#{ns}`.split("\n").map! { |v| v.gsub(/\.$/,"") }    
-          Chef::Log.info("verify #{dns_name} has: "+dns_value)
-          Chef::Log.info("ns #{ns} has: "+existing_dns.sort.to_s)
-          verified = false
-          existing_dns.each do |val|
-            if val.downcase.include? dns_value
-              verified = true
-              Chef::Log.info("verified.")
+          if provider =~ /infoblox/
+            verified = check_record(dns_name, dns_value)
+          else
+            dns_lookup_name = dns_name
+            if dns_name =~ /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/
+              dns_lookup_name = $4 +'.' + $3 + '.' + $2 + '.' + $1 + '.in-addr.arpa'
+            elsif dns_name =~ Resolv::IPv6::Regex
+              dns_lookup_name = IPAddr.new(dns_name).reverse
+            end
+            puts "dig +short #{dns_type} #{dns_lookup_name} @#{ns}"
+            existing_dns = `dig +short #{dns_type} #{dns_lookup_name} @#{ns}`.split('\n').map! { |v| v.gsub(/\.$/, '') }
+            Chef::Log.info("verify #{dns_name} has: " + dns_value)
+            Chef::Log.info("ns #{ns} has: " + existing_dns.sort.to_s)
+            verified = false
+            existing_dns.each do |val|
+              if val.downcase.include? dns_value
+                verified = true
+                Chef::Log.info('verified.')
+              end
             end
           end
+
           if !verified && max_retry_count > 1
             Chef::Log.info("waiting 10sec for #{ns} to get updated...")
             sleep 10
@@ -290,6 +379,7 @@ module Fqdn
           return false
         end       
       end
+      Chef::Log.info("DNS Record with Name: #{dns_name} Verified.")
       return true
     end
 
@@ -314,6 +404,15 @@ module Fqdn
       # skip deletes if other active clouds for same dc
       if node[:workorder][:services].has_key?("gdns")
         cloud_service =  node[:workorder][:services][:gdns][cloud_name]
+      end
+      if node.workorder.rfcCi.rfcAction == "delete"
+        lbs = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Lb/}
+        if !(lbs.nil? || lbs.size==0)
+          lb = lbs.first
+          JSON.parse(lb[:ciAttributes][:vnames]).keys.each do |lb_name|
+            return true if lb_name.split('.')[4] =~ /cdc5|cdc6|cdc7|cdc8/
+          end
+        end
       end
       if node.workorder.box.ciAttributes.has_key?("is_platform_enabled") &&
           node.workorder.box.ciAttributes.is_platform_enabled == 'true' &&

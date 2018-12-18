@@ -642,13 +642,29 @@ resource "job",
   :design => true,
   :requires => { "constraint" => "0..*" }
 
-resource "objectstore",
-  :cookbook => "oneops.1.objectstore",
+resource 'objectstore',
+  :cookbook => 'oneops.1.objectstore',
   :design => true,
-  :requires => {"constraint" => "0..1",:services => "filestore"},
-  :attributes => {
-    "username" => "",
-    "password" => ""
+  :requires => {'constraint' => '0..1',:services => 'filestore'},
+  :payloads => {
+    'compute_service' => {
+     'description' => 'Compute Service',
+     'definition' => '
+         { "returnObject": false,
+           "returnRelation": false,
+           "relationName": "base.DeployedTo",
+           "direction": "from",
+           "targetClassName": "account.Cloud",
+           "relations": [
+             { "returnObject": true,
+               "returnRelation": false,
+               "relationName": "base.Provides",
+               "relationAttrs":[{"attributeName":"service", "condition":"eq", "avalue":"compute"}],
+               "direction": "from"
+             }
+           ]
+         }'
+   }
   }
 
 resource "storage",
@@ -680,14 +696,14 @@ resource "storage",
    }
   }
 
-resource "volume",
-  :cookbook => "oneops.1.volume",
+resource 'volume',
+  :cookbook => 'oneops.1.volume',
   :design => true,
-  :requires => { "constraint" => "0..*", "services" => "compute" },
-  :attributes => {  "mount_point"   => '/data',
-                    "device"        => '',
-                    "fstype"        => 'xfs',
-                    "options"       => ''
+  :requires => { 'constraint' => '0..*', 'services' => 'compute' },
+  :attributes => {  'mount_point'   => '/data',
+                    'device'        => '',
+                    'fstype'        => 'xfs',
+                    'options'       => ''
                  },
   :monitors => {
       'usage' =>  {'description' => 'Usage',
@@ -730,6 +746,29 @@ resource "volume",
      }'
    }
   }
+
+resource 'volume-eph',
+  :cookbook => 'oneops.1.volume',
+  :design => true,
+  :requires => { 'constraint' => '0..*', 'services' => 'compute' },
+  :attributes => {  'mount_point'   => '/tmpdata',
+                    'device'        => '',
+                    'fstype'        => 'xfs',
+                    'options'       => ''
+                 },
+  :monitors => {
+      'usage' =>  {'description' => 'Usage',
+                  'chart' => {'min'=>0,'unit'=> 'Percent used'},
+                  'cmd' => 'check_disk_use!:::node.workorder.rfcCi.ciAttributes.mount_point:::',
+                  'cmd_line' => '/opt/nagios/libexec/check_disk_use.sh $ARG1$',
+                  'metrics' => { 'space_used' => metric( :unit => '%', :description => 'Disk Space Percent Used'),
+                                 'inode_used' => metric( :unit => '%', :description => 'Disk Inode Percent Used') },
+                  :thresholds => {
+                    'LowDiskSpace' => threshold('5m','avg','space_used',trigger('>',90,5,1),reset('<',90,5,1)),
+                    'LowDiskInode' => threshold('5m','avg','inode_used',trigger('>',90,5,1),reset('<',90,5,1)),
+                  },
+                },
+    }
 
 resource "share",
   :cookbook => "oneops.1.glusterfs",
@@ -995,6 +1034,7 @@ end
   { :from => 'job',         :to => 'user' },
   { :from => 'job',         :to => 'os' },
   { :from => 'volume',      :to => 'os' },
+  { :from => 'volume-eph',  :to => 'os' },
   { :from => 'certificate', :to => 'os' },
   { :from => 'share',       :to => 'os' },
   { :from => 'logstash',    :to => 'os' },
@@ -1005,12 +1045,15 @@ end
   { :from => 'filebeat',    :to => 'compute' },
   { :from => 'storage',     :to => 'compute' },
   { :from => 'share',       :to => 'volume'  },
+  { :from => 'share',       :to => 'volume-eph'  },
   { :from => 'volume',      :to => 'user' },
+  { :from => 'volume-eph',  :to => 'user' },
   { :from => 'daemon',      :to => 'os' },
   { :from => 'daemon',      :to => 'download' },
   { :from => 'daemon',      :to => 'library' },
   { :from => 'download',    :to => 'os' },
   { :from => 'file',        :to => 'volume' },
+  { :from => 'file',        :to => 'volume-eph' },
   { :from => 'file',        :to => 'os' },
   { :from => 'artifact',    :to => 'os' },
   { :from => 'sensuclient', :to => 'compute'  },
@@ -1020,13 +1063,16 @@ end
   { :from => 'secrets-client',  :to => 'user'},
   { :from => 'secrets-client',  :to => 'certificate'},
   { :from => 'secrets-client',  :to => 'volume'},
+  { :from => 'secrets-client',  :to => 'volume-eph'},
   { :from => 'objectstore',  :to => 'secrets-client'},
   { :from => 'objectstore',  :to => 'user'},
   { :from => 'baas-job', :to => 'os'},
   { :from => 'baas-job', :to => 'volume'  },
+  { :from => 'baas-job', :to => 'volume-eph'  },
   { :from => 'baas-job', :to => 'java'},
   { :from => 'service-mesh', :to => 'os'},
   { :from => 'service-mesh', :to => 'volume'},
+  { :from => 'service-mesh', :to => 'volume-eph'},
   { :from => 'service-mesh', :to => 'java'}
 ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
@@ -1073,8 +1119,11 @@ end
 end
 
 # managed_via
-[ 'os', 'telegraf', 'filebeat', 'user', 'job', 'file', 'volume', 'share', 'download', 'library', 'daemon',
-  'certificate', 'logstash', 'sensuclient', 'artifact', 'objectstore', 'secrets-client', 'baas-job', 'service-mesh'].each do |from|
+[ 'os', 'telegraf', 'filebeat', 'user', 'job', 'file', 'volume', 'share',
+  'download', 'library', 'daemon', 'certificate', 'logstash', 'sensuclient',
+  'artifact', 'objectstore', 'secrets-client', 'baas-job', 'service-mesh',
+  'volume-eph'
+].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',

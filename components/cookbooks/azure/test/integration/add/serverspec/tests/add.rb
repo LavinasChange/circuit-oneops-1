@@ -15,6 +15,9 @@ require "#{COOKBOOKS_PATH}/azuresecgroup/libraries/network_security_group.rb"
 #load spec utils
 require "#{COOKBOOKS_PATH}/azure_base/test/integration/azure_spec_utils"
 
+# load compute utils file
+require "#{COOKBOOKS_PATH}/compute/libraries/compute_util.rb"
+
 RSpec.configure do |c|
   c.filter_run_excluding :express_route_enabled => !AzureSpecUtils.new($node).is_express_route_enabled
 end
@@ -62,6 +65,49 @@ describe "azure node::create" do
 
       expect(vm.publisher).to be_nil
 
+    end
+
+    it 'should pick the correct custom image version', :custom_image => true do
+      @spec_utils.set_attributes_on_node_required_for_vm_manager
+      credentials = @spec_utils.get_azure_creds
+      virtual_machine_lib = AzureCompute::VirtualMachine.new(credentials)
+      rg_svc = AzureBase::ResourceGroupManager.new($node)
+      resource_group_name = rg_svc.rg_name
+
+      server_name = @spec_utils.get_server_name
+      vm = virtual_machine_lib.get(resource_group_name, server_name)
+
+      azure_compute_service = Fog::Compute::AzureRM.new(credentials)
+      os_disk = azure_compute_service
+                .managed_disks
+                .get(resource_group_name, vm.os_disk_name)
+
+      # get the custom image's name and its resource group
+      creation_data = Fog::Compute::AzureRM::CreationData.parse(os_disk.creation_data)
+      custom_image_name = creation_data['attributes'][:source_uri].split('/')[8]
+      customimage_resource_group = creation_data['attributes'][:source_uri].split('/')[4]
+
+      ostype = $node[:workorder][:payLoad][:os][0][:ciAttributes]['ostype'].downcase
+      image_id = $node['image_id'].split(':')
+
+      # get all images from the custom images resource group
+      azure_client = get_azure_connection(credentials)
+      images = azure_client.resource_groups.list_resources(customimage_resource_group)
+
+      is_custom_image = AzureSpecUtils.new($node).is_imagetypecustom
+
+      if is_custom_image
+        custom_image = get_custom_image(images, ostype, image_id)
+        expect(custom_image_name.split('_')[0]).to eq(custom_image.name)
+      else
+        testing_mode_flag = nil
+        if $node[:workorder].key?('config') && $node[:workorder][:config].key?('TESTING_MODE')
+          testing_mode_flag = ($node[:workorder][:config][:TESTING_MODE].to_s.downcase == 'true')
+        end
+
+        fast_image = get_image(images, nil, true, testing_mode_flag, nil, false, ostype)
+        expect(custom_image_name.split('_')[0]).to eq(fast_image.name)
+      end
     end
 
 

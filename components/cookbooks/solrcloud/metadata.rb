@@ -21,7 +21,7 @@ attribute 'solr_version',
     :category => '1.SolrCloud',
     :form => {'field' => 'select', 'options_for_select' => [
        ['6.4.2 (Deprecated)', '6.4.2'], ['6.6.0 (Deprecated)', '6.6.0'],
-       ['7.2.1', '7.2.1'], ['7.4.0 (Not tested yet)', '7.4.0']
+       ['7.2.1', '7.2.1'], ['7.4.0 (Un-tested, Do not deploy)', '7.4.0'], ['7.5.0 (Un-tested, Do not deploy)', '7.5.0']
     ]},
     :order => 4
   }
@@ -286,7 +286,7 @@ attribute 'solr_custom_component_version',
 # Solr Monitor Specific Attributes
 attribute 'solr_monitor_version',
           :description => 'Version of jar file with Solr Metrics',
-          :default => '2.0.7',
+          :default => '2.0.13',
           :required => 'required',
           :format => {
               :help => 'Expects a version of a jar file whose artifact is com.walmart.strati.af.df.managed_solr.solrmonitor:solrcloud-oneops-metrics. Example: 0.0.1, 1.0.2 etc',

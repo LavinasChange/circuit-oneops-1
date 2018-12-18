@@ -33,7 +33,11 @@ cloud_services.each do |lb_service|
       
   lbs.each do |lb|
 
-    dc_name = lb_service[:ciAttributes][:gslb_site_dns_id]  
+    if node.workorder.rfcCi.rfcAction =~ /update|delete/
+      dc_name = node.dc_dns_zone
+    else
+      dc_name = lb_service[:ciAttributes][:gslb_site_dns_id]
+    end
     
     if lb['ciAttributes'].has_key?('availability_zone') &&
        !lb['ciAttributes']['availability_zone'].empty?

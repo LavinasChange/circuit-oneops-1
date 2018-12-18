@@ -197,7 +197,7 @@ Array(1..slice_count).each do |i|
       compute_attr = node[:workorder][:payLoad][:DependsOn].select{|d| (d[:ciClassName].split('.').last == 'Compute') }.first[:ciAttributes]
       vm = node[:storage_provider].servers(:resource_group => rg_manager.rg_name).get(rg_manager.rg_name, compute_attr[:instance_name])
 
-      if vm.vm_size =~ /.*[EDG](\d+|)S.*/i && ciAttr[:volume_type] == 'IOPS1'
+      if vm.vm_size =~ /.*[EDG](\d+|)S.*/i && %w(IOPS1 IOPS2).include?(ciAttr[:volume_type])
         account_type = 'Premium_LRS'
       else
         account_type = 'Standard_LRS'

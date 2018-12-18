@@ -111,7 +111,7 @@ install_ruby_binary()
   fi
 
   wget -q -O ruby-binary $1
-  
+
   if [[ $1 = *".tar.gz" ]]; then
     tar zxf ruby-binary --strip-components 1 -C /usr
   elif [[ $1 = *".rpm" ]]; then
@@ -225,12 +225,7 @@ else
       fi
 
       apt-get install -q -y build-essential make libxml2-dev libxslt-dev libz-dev nagios3
-
-      if [[ $(lsb_release -r -s) = *14.04* ]]; then
-        install_ruby_ubuntu_14_04
-      else
-        apt-get -q -y install ruby ruby-dev
-      fi
+      apt-get -q -y install ruby ruby-dev
 
       set +e
 
@@ -265,7 +260,8 @@ else
 
     gem install json --version $gem_version --no-ri --no-rdoc --quiet
     if [ $? -ne 0 ]; then
-      echo "could not install json gem, version $gem_version"
+      echo "Could not install json gem, version $gem_version" 1>&2
+      exit 1
     fi
 
     #set -e
@@ -280,22 +276,31 @@ else
       fi
     fi
 
+    # Check if bundler is installed
+    gem list ^bundler$ -i
+    if [ $? -ne 0 ]; then
+      echo "Could not install bundler gem" 1>&2
+      exit 1
+    fi
+
     #set +e
     perl -p -i -e 's/ 00:00:00.000000000Z//' /var/lib/gems/*/specifications/*.gemspec 2>/dev/null
 
     # oneops user
     grep "^oneops:" /etc/passwd 2>/dev/null
     if [ $? != 0 ] ; then
-      set -e
+      set +e
       echo "*** ADD oneops USER ***"
 
       # create oneops user & group - deb systems use addgroup
-      if [ -e /etc/lsb-release ] ; then
+      which addgroup
+      if [ $? -eq 0 ] ; then
         addgroup oneops
       else
         groupadd oneops
       fi
 
+      set -e
       useradd oneops -g oneops -m -s /bin/bash
       echo "oneops   ALL = (ALL) NOPASSWD: ALL" >> /etc/sudoers
     else

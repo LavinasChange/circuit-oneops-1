@@ -137,7 +137,7 @@ class Library
     ci = $node['workorder']['payLoad']['DependsOn'][0]
     asmb_name = $node['workorder']['payLoad']['Assembly'][0]['ciName']
     gdns_cloud_service = $node['workorder']['services']["gdns"][cloud_name]
-    dc_name = gdns_cloud_service['ciAttributes']['gslb_site_dns_id']
+    dc_name = get_dc_name
 
     return [env_name, platform_name, asmb_name, dc_name, ci["ciId"].to_s, "gslbsrvc"].join("-")
   end
@@ -149,7 +149,7 @@ class Library
     ci = $node['workorder']['box']
     asmb_name = $node['workorder']['payLoad']['Assembly'][0]['ciName']
     gdns_cloud_service = $node['workorder']['services']['gdns'][cloud_name]
-    dc_name = gdns_cloud_service['ciAttributes']['gslb_site_dns_id']
+    dc_name = get_dc_name
 
     return [env_name, platform_name, asmb_name, dc_name, ci["ciId"].to_s, "gslbsrvc"].join("-")
   end
@@ -296,14 +296,6 @@ class Library
       msg = "gdns service for #{cloud_name} needs gslb_site_dns_id attr populated"
       puts "***FAULT:FATAL=#{msg}"
     end
-    platform = $node['workorder']['box']
-    platform_name = platform['ciName']
-
-    env_name = $node['workorder']['payLoad']['Environment'][0]['ciName']
-    asmb_name = $node['workorder']['payLoad']['Assembly'][0]['ciName']
-    org_name = $node['workorder']['payLoad']['Organization'][0]['ciName']
-    dc_dns_zone = cloud_service['ciAttributes']['gslb_site_dns_id']+"."+dns_service['ciAttributes']['zone']
-    dc_dns_name = [platform_name, env_name, asmb_name, org_name, dc_dns_zone].join(".")
 
     lbs = $node['workorder']['payLoad']['DependsOn'].select { |d| d['ciClassName'] =~ /Lb/}
     if lbs.nil? || lbs.size==0
@@ -319,6 +311,26 @@ class Library
     end
 
     vport = listener_parts[1]
+
+    platform = $node['workorder']['box']
+    platform_name = platform['ciName']
+
+    env_name = $node['workorder']['payLoad']['Environment'][0]['ciName']
+    asmb_name = $node['workorder']['payLoad']['Assembly'][0]['ciName']
+    org_name = $node['workorder']['payLoad']['Organization'][0]['ciName']
+
+    dc_dns_zone = ""
+    if $node['workorder']['rfcCi']['rfcAction'] =~ /update|delete/
+      JSON.parse(lb['ciAttributes']['vnames']).keys.each do |lb_name|
+        dc_dns_zone = lb_name.split('.')[4]+"."+dns_service['ciAttributes']['zone']
+      end
+    else
+      if cloud_service[:ciAttributes].has_key?("gslb_site_dns_id")
+        dc_dns_zone = cloud_service['ciAttributes']['gslb_site_dns_id']+"."+dns_service['ciAttributes']['zone']
+      end
+    end
+
+    dc_dns_name = [platform_name, env_name, asmb_name, org_name, dc_dns_zone].join(".")
 
 # dc lb - example: web.prod-1312.core.oneops.dfw.prod.walmart.com-SSL_BRIDGE_443tcp-lb
     dc_lb_name = [platform_name, env_name, asmb_name, org_name, dc_dns_zone].join(".") +
@@ -358,11 +370,30 @@ class Library
 
     remotedns = $node['workorder']['payLoad']['remotegdns']
     remotedns.each do |cloud|
-      dc_name = cloud['ciAttributes']['gslb_site_dns_id']
+      dc_name = get_dc_name
       servicename = [env_name, platform_name, asmb_name, dc_name, ci["ciId"].to_s, "gslbsrvc"].join("-")
       gslb_services.push(servicename) if activeclouds.include? cloud['nsPath']
     end
     return gslb_services
+  end
+
+  def get_dc_name
+    lbs = $node['workorder']['payLoad']['DependsOn'].select { |d| d['ciClassName'] =~ /Lb/}
+    lb = lbs.first
+    if $node['workorder']['rfcCi']['rfcAction'] =~ /update|delete/
+      JSON.parse(lb['ciAttributes']['vnames']).keys.each do |lb_name|
+        return lb_name.split('.')[4]
+      end
+    else
+      cloud_name = $node['workorder']['cloud']['ciName']
+
+      if $node['workorder']['services'].has_key?('gdns')
+        cloud_service =  $node['workorder']['services']['gdns'][cloud_name]
+      end
+      if cloud_service[:ciAttributes].has_key?("gslb_site_dns_id")
+        return cloud_service['ciAttributes']['gslb_site_dns_id']
+      end
+    end
   end
 
   def build_entry_list
@@ -380,19 +411,30 @@ class Library
     end
 
     $node.set["is_last_active_cloud_in_dc"] = true
-    if $node['workorder']['box']['ciAttributes'].has_key?("is_platform_enabled") &&
-        $node['workorder']['box']['ciAttributes']['is_platform_enabled'] == 'true' &&
-        $node['workorder']['payLoad'].has_key?("activeclouds") && !cloud_service.nil?
-      $node['workorder']['payLoad']["activeclouds"].each do |service|
+    lbs = $node['workorder']['payLoad']['DependsOn'].select { |d| d['ciClassName'] =~ /Lb/}
+    flag = true
+    if !(lbs.nil? || lbs.size==0)
+      lb = lbs.first
+      JSON.parse(lb['ciAttributes']['vnames']).keys.each do |lb_name|
+        flag = false if lb_name.split('.')[4] =~ /cdc5|cdc6|cdc7|cdc8/ && $node['workorder']['rfcCi']['rfcAction'] == "delete"
+      end
+    end
+    if flag
+      if $node['workorder']['box']['ciAttributes'].has_key?("is_platform_enabled") &&
+          $node['workorder']['box']['ciAttributes']['is_platform_enabled'] == 'true' &&
+          $node['workorder']['payLoad'].has_key?("activeclouds") && !cloud_service.nil?
+        $node['workorder']['payLoad']["activeclouds"].each do |service|
 
-        if service['ciAttributes'].has_key?("gslb_site_dns_id") &&
-            service['nsPath'] != cloud_service['nsPath'] &&
-            service['ciAttributes']['gslb_site_dns_id'] == cloud_service['ciAttributes']['gslb_site_dns_id']
+          if service['ciAttributes'].has_key?("gslb_site_dns_id") &&
+              service['nsPath'] != cloud_service['nsPath'] &&
+              service['ciAttributes']['gslb_site_dns_id'] == cloud_service['ciAttributes']['gslb_site_dns_id']
 
-          $node.set['is_last_active_cloud_in_dc'] = false
+            $node.set['is_last_active_cloud_in_dc'] = false
+          end
         end
       end
     end
+
 
     $node.set["is_last_active_cloud"] = true
     if $node['workorder']['box']['ciAttributes'].has_key?("is_platform_enabled") &&

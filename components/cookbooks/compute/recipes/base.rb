@@ -55,6 +55,8 @@ ruby_block 'wait for ssh' do
 
     if ssh_failed
       puts "***FATAL: SSH - we did not receive a valid response in 300 seconds"
+      Chef::Log.info("SSH - Deleting the VM")
+      run_context.include_recipe 'compute::delete'
       raise("SSH - we did not receive a valid response in 300 seconds")
     end
   end
@@ -73,7 +75,6 @@ ruby_block 'install base' do
       Chef::Log.info("No fast image detected");
     end
 
-    Chef::Resource::RubyBlock.send(:include, Chef::Mixin::ShellOut)
     shell_timeout = 36000
 
     # install os package repos - repo_map keyed by os
@@ -169,49 +170,31 @@ ruby_block 'install base' do
     source_file = File.join(base_dir, base_file)
     Chef::Log.info("Copying #{source_file} ...")
     cmd = rsync_cmd.gsub("SOURCE",source_file).gsub("DEST","~/")
-    result = shell_out(cmd, :timeout => shell_timeout)
-    Chef::Log.debug("#{cmd} returned: #{result.stdout}")
-    result.error!
+    execute_command(cmd, true, shell_timeout)
 
     # Execute install base file on the VM
     cmd = "#{ssh_interactive_cmd} \"#{cmd_prefix}#{dest_dir}#{base_file} #{args}\""
     Chef::Log.info("Executing Command: #{cmd}")
-    result = shell_out(cmd, :timeout => shell_timeout)
-    Chef::Log.debug("#{cmd} returned: #{result.stdout}")
-    result.error!
+    execute_command(cmd, true, shell_timeout)
 
     # Create sudo file for windows
     if os_type =~ /windows/
       sudo_file = File.join(base_dir, 'sudo')
       Chef::Log.info("Copying #{sudo_file} ...")
       cmd = rsync_cmd.gsub("SOURCE",sudo_file).gsub("DEST","/usr/bin/")
-      result = shell_out(cmd, :timeout => shell_timeout)
-      Chef::Log.debug("#{cmd} returned: #{result.stdout}")
-      result.error!
+      execute_command(cmd, true, shell_timeout)
 
       cmd = "#{ssh_interactive_cmd}chmod +x /usr/bin/sudo"
       Chef::Log.info("Executing Command: #{cmd}")
-      result = shell_out(cmd, :timeout => shell_timeout)
-      Chef::Log.debug("#{cmd} returned: #{result.stdout}")
-      result.error!
+      execute_command(cmd, true, shell_timeout)
     end
 
     cmd = node[:ssh_cmd].gsub("IP",node[:ip]) + "\"grep processor /proc/cpuinfo | wc -l\""
-    result = shell_out(cmd, :timeout => shell_timeout)
-    cores = result.stdout.gsub("\n","")
-    puts "***RESULT:cores=#{cores}"
+    result = execute_command(cmd, false, shell_timeout)
+    puts "***RESULT:cores=#{result.stdout.gsub("\n","")}"
 
     cmd = node[:ssh_cmd].gsub("IP",node[:ip]) + "\"free | head -2 | tail -1 | awk '{ print \\$2/1024 }'\""
-    puts cmd
-    result = shell_out(cmd, :timeout => shell_timeout)
-    ram = result.stdout.gsub("\n","")
-    puts "***RESULT:ram=#{ram}"
-
-    # To avoid KCI failure
-    if node[:workorder].has_key?('config') && node[:workorder][:config].has_key?('TESTING_MODE') && node[:workorder][:config][:TESTING_MODE].downcase == "true" &&
-      !(os_type =~ /windows/)
-      cmd = "#{ssh_interactive_cmd} sudo touch /tmp/testmode.txt"
-      shell_out(cmd, :timeout => shell_timeout)
-    end
+    result = execute_command(cmd, false, shell_timeout)
+    puts "***RESULT:ram=#{result.stdout.gsub("\n","")}"
   end
 end

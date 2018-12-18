@@ -9,17 +9,29 @@ grouping 'default',
   :access => "global",
   :packages => [ 'base', 'mgmt.catalog', 'mgmt.manifest', 'catalog', 'manifest', 'bom' ]
 
+attribute 'usergroup',
+  :description => 'Combine users in a group',
+  :default => 'false',
+  :format => {
+    :help => 'Create multiple users',
+    :editable => false,
+    :category => '1.Global',
+    :order => 1,
+    :form => { 'field' => 'checkbox' }
+  }
+
 attribute 'username',
   :description => "Username",
-  :required => "required",
   :format => {
     :important => true,
     :help => 'Username',
     :category => '1.Global',
     :editable => false,
-    :order => 1,
-    :pattern => "(^[a-z][a-z0-9_-]{1,60}\\\\|^)[a-z0-9_-]{3,15}$"
+    :order => 2,
+    :pattern => "(^[a-z][a-z0-9_-]{1,60}\\\\|^)[a-z0-9_-]{3,15}$",
+    :filter   => { 'all' => { 'visible' => 'usergroup:neq:true' } }
   }
+
 attribute 'ulimit',
   :description => "Max Open Files",
   :required => "required",
@@ -27,15 +39,16 @@ attribute 'ulimit',
   :format => {
     :help => 'Ulimit value for number of max open files. Should be even multiple of 1024',
     :category => '1.Global',
-    :order => 5,
+    :order => 6,
     :pattern => '^[0-9]{4,6}$'
   }
+
 attribute 'description',
   :description => "Description",
   :format => {
     :help => 'Enter description for this user',
     :category => '1.Global',
-    :order => 2
+    :order => 3
   }
 
 attribute 'home_directory',
@@ -43,7 +56,8 @@ attribute 'home_directory',
   :format => {
     :help => 'Specify custom directory or leave empty for the system default, usually /home',
     :category => '1.Global',
-    :order => 3
+    :order => 4,
+    :filter   => { 'all' => { 'visible' => 'usergroup:neq:true' } }
   }
 
 attribute 'home_directory_mode',
@@ -52,7 +66,7 @@ attribute 'home_directory_mode',
   :format => {
     :help => 'Specify the directory mode/priv in unix format. e.g. 755 or 700',
     :category => '1.Global',
-    :order => 4
+    :order => 5
   }
 
 attribute 'login_shell',
@@ -97,7 +111,7 @@ attribute 'sudoer',
 attribute 'sudoer_cmds',
   :description => 'Commands for sudo',
   :data_type => 'array',
-  :default => '["tcpdump", "jmap", "jcmd", "jstat", "jstack", "strace"]',
+  :default => '["tcpdump", "jmap", "jcmd", "jstat", "jstack", "strace", "service", "chmod a+r /tmp/heapdump*.prof"]',
   :format => {
     :help => 'Enter a list of commands allowed to be executed with sudo',
     :category => '2.Options',
@@ -112,7 +126,8 @@ attribute 'authorized_keys',
   :format => {
     :help => 'Enter a list of public keys to authorize SSH key access to this account',
     :category => '3.Access',
-    :order => 1
+    :order => 1,
+    :filter   => { 'all' => { 'visible' => 'usergroup:neq:true' } }
   }
   
 attribute 'password',
@@ -121,7 +136,19 @@ attribute 'password',
   :format => {
     :help => 'Applies to Windows VMs only, if left blank a random password will be generated',
     :category => '3.Access',
-    :order => 2
+    :order => 2,
+    :filter   => { 'all' => { 'visible' => 'usergroup:neq:true' } }
   }
-  
+
+attribute 'usermap',
+  :description => 'Usernames and SSH keys map',
+  :default => '{}',
+  :data_type => 'hash',
+  :format => {
+    :help => 'Map of usernames and ssh keys, in form of "username" => "SSH key"',
+    :category => '3.Access',
+    :order => 3,
+    :filter   => { 'all' => { 'visible' => 'usergroup:eq:true' } }
+  }
+
 recipe "repair", "Repair User"

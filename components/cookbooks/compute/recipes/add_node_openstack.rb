@@ -258,41 +258,49 @@ ruby_block 'setup security groups' do
     end
 
     secgroups.each do |sg|
-      if sg[:rfcAction] != "delete"
-        security_groups.push(sg[:ciAttributes][:group_id])
-        Chef::Log.info("Server inspect :::" + server.inspect)
+      if sg[:rfcAction] != 'delete'
+        sgId = sg['ciAttributes']['group_id']
+        sgName = sg['ciAttributes']['group_name']
+        security_groups.push(sgId)
+        Chef::Log.info("Server inspect :::" + server.inspect.gsub("\n",''))
+
+        found_sg = nil
+        if server.respond_to?('security_groups')
+          found_sg = server.security_groups.detect{ |f| f.name == sgName }
+          Chef::Log.info("Security group assigned: #{found_sg.inspect.gsub("\n",'')}")
+        end
+
         #Skip the dynamic sg update for ndc/edc due to OpenStack incompatibility
-        unless (server.nil? || server.state != "ACTIVE") || ((cloud_name.include? "ndc") || (cloud_name.include? "edc"))
+        if server && server.state == 'ACTIVE' && !found_sg
           # add_security_group to the existing compute instance. works for update calls as well for existing security groups
           begin
-            res = conn.add_security_group(server.id, sg[:ciAttributes][:group_name])
-            Chef::Log.info("add secgroup response for sg: #{sg[:ciAttributes][:group_name]}: "+res.inspect)
+            res = conn.add_security_group(server.id, sgName)
+            Chef::Log.info("add secgroup response for sg: #{sgName}: #{res.inspect.gsub("\n",'')}")
           rescue Excon::Errors::Error =>e
-             msg=""
-             case e.response[:body]
-             when /\"code\": \d{3}+/
+            msg=''
+            case e.response[:body]
+            when /\"code\": \d{3}+/
               error_key=JSON.parse(e.response[:body]).keys[0]
               msg = JSON.parse(e.response[:body])[error_key]['message']
               exit_with_error "#{error_key} .. #{msg}"
-             else
+            else
               msg = JSON.parse(e.response[:body])
-              exit_with_error "#{msg}"
-             end
+              exit_with_error(msg)
+            end
           rescue Exception => ex
-              msg = ex.message
-              exit_with_error "#{msg}"
+            msg = ex.message
+            exit_with_error(msg)
           end
         end
       end
     end
 
     # add default security group
-    sg = conn.list_security_groups.body['security_groups'].select { |g| g['name'] == "default"}
-    Chef::Log.info("sg: #{sg.inspect}")
-    security_groups.push(sg.first["id"])
+    sg = conn.list_security_groups.body['security_groups'].detect{ |g| g['name'] == 'default' }
+    Chef::Log.info("Default secgroup: #{sg.inspect}")
+    security_groups.push(sg['id'])
 
     Chef::Log.info("security_groups: #{security_groups.inspect}")
-
   end
 end
 
@@ -477,7 +485,11 @@ ruby_block 'set node network params' do
         if server.addresses.has_key?(net)
           addrs = server.addresses[net]
           #check multiple ips (exception: possible to have 2 ip entries (public, private) after initial deployment)
-          exit_with_error "multiple ips returned" if addrs.size > 1 && rfcCi["rfcAction"] != "update"
+          if addrs.size > 1 && rfcCi['rfcAction'] != 'update'
+            Chef::Log.info('Multiple ips returned - Deleting the VM')
+            run_context.include_recipe 'compute::delete'
+            exit_with_error 'multiple ips returned'
+          end
           private_ip = addrs.first["addr"]
           break
         end
@@ -624,20 +636,10 @@ include_recipe "compute::ssh_port_wait"
 ruby_block 'handle ssh port closed' do
   block do
     if node[:ssh_port_closed]
-      Chef::Log.error("ssh port closed after 5min, dumping console log")
-      begin
-        console_log = server.console.body
-        console_log["output"].split("\n").each do |row|
-          case row
-          when /IP information for eth0... failed|Could not retrieve public key from instance metadata/
-            puts "***FAULT:KNOWN=#{row}"
-          else
-            exit_with_error "SSH port not open on VM"
-          end
-          Chef::Log.info("console-log:" +row)
-        end
-      rescue Exception => e
-        Chef::Log.error("could not dump console-log. exception: #{e.inspect}")
+      Chef::Log.error("ssh port closed after 5min")
+      if rfcCi['rfcAction'] == "add"
+        Chef::Log.info("SSH - Deleting the VM")
+        run_context.include_recipe 'compute::delete'
       end
       exit_with_error "ssh port closed after 5min"
     end

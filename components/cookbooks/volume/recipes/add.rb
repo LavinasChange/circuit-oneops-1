@@ -114,9 +114,12 @@ if storage.nil? && token_class =~ /azure/ && attrs[:skip_vol] == 'true'
   return
 end
 
-package 'lvm2'
+%w(parted lvm2).each { |pkg| package pkg }
 package 'mdadm' do
   not_if{mode == 'no-raid'}
+end
+package 'xfsprogs' do
+  only_if { _fstype == 'xfs' }
 end
 
 # need ruby block so package resource above run first
@@ -181,7 +184,6 @@ ruby_block 'create-ephemeral-volume-on-azure-vm' do
     restore_script_dir = '/opt/oneops/azure-restore-ephemeral-mntpts'
     initial_mountpoint = '/mnt/resource'
     script_file_path   = "#{restore_script_dir}/#{logical_name}.sh"
-    ephemeral_device   = '/dev/sdb1'
     rc_file_path       = '/etc/rc.d/rc.local'
 
     # Create restore directory with path
@@ -197,9 +199,14 @@ swapfile=$(cat /proc/swaps | grep #{initial_mountpoint} | awk '{print $1}')
 if [ $swapfile ]; then
   swapoff $swapfile
 fi
+root_device=$(mount -l | grep "on / " | awk '{print $1}')
+root_partition=$(sed "s=/dev/==g" <<<"$root_device")
+resource_partition=$(lsblk -sd | grep part | grep -v $root_partition | head -n 1 | awk '{print $1}')
+resource_device="/dev/$resource_partition"
+
 umount #{initial_mountpoint}
-pvcreate -f #{ephemeral_device}
-vgcreate #{platform_name}-eph #{ephemeral_device}
+pvcreate -f $resource_device
+vgcreate #{platform_name}-eph $resource_device
 "yes" | lvcreate #{l_switch} #{size} -n #{logical_name} #{platform_name}-eph
 
 mount -t #{_fstype} -o #{_options} /dev/#{platform_name}-eph/#{logical_name} #{_mount_point}
@@ -377,10 +384,13 @@ ruby_block 'create-storage-non-ephemeral-volume' do
       Chef::Log.info("Volume Group Exists Already")
     end
 
+    # Use striped LV in case of multiple devices
+    striped = devices.size > 1 ? "--stripes #{devices.size} --stripesize 256" : ''
+
     `lvdisplay /dev/#{platform_name}/#{logical_name}`
 
     if $?.to_i != 0
-      execute_command("yes | lvcreate #{l_switch} #{size} -n #{logical_name} #{platform_name}",true)
+      execute_command("yes | lvcreate #{l_switch} #{size} #{striped} -n #{logical_name} #{platform_name}",true)
     else
       Chef::Log.warn("logical volume #{platform_name}/#{logical_name} already exists and hence cannot recreate .. prefer replacing compute")
     end
@@ -426,10 +436,6 @@ ruby_block 'create-storage-non-ephemeral-volume' do
 
     execute_command("vgchange -ay #{platform_name}",true)
   end
-end
-
-package "xfsprogs" do
-  only_if { _fstype == "xfs" }
 end
 
 ruby_block 'filesystem' do

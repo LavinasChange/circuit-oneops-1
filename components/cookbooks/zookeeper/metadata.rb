@@ -280,7 +280,7 @@ attribute 'sync_timeout_ticks',
 attribute 'autopurge_purgeinterval',
   :description          => 'Time interval in hours for which the purge task has to be triggered',
   :required => 'required',
-  :default               => "6",
+  :default               => "1",
   :format => {
     :category => '2.Configuration Parameters',
     :help => 'The time interval in hours for which the purge task has to be triggered. Set to a positive integer (1 and above) to enable the auto purging. Defaults to 0..',

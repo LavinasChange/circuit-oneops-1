@@ -43,7 +43,8 @@ resource "zookeeper",
              'max_session_timeout' => "40000",
              'max_client_connections' => "60",
              'autopurge_snapretaincount' => "10",
-             'autopurge_purgeinterval' => "6"
+             'autopurge_purgeinterval' => "1",
+             'snapshot_trigger' => '100000'
              },
           :monitors => {
              'zookeeperprocess' => {:description => 'ZookeeperProcess',
