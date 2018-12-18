@@ -11,11 +11,11 @@ include_recipe "zookeeper::validate_config"
 node.set[:zookeeper][:home_dir] = node[:zookeeper][:install_dir]
 node.set[:zookeeper][:exported_jars] = [ ::File.join(node[:zookeeper][:home_dir], "zookeeper.jar"), ]
 Chef::Log.info("exported_jars path = #{node[:zookeeper][:exported_jars]}")
-zk_loc_basename = "#{node[:zookeeper][:version]}"
+#zk_loc_basename = "#{node[:zookeeper][:version]}"
 zk_basename = "zookeeper-#{node[:zookeeper][:version]}"
 ci = node.workorder.rfcCi.ciAttributes;
 zk_base_url = ci['mirror']
-zk_download_location = "#{zk_base_url}"+"#{zk_loc_basename}/"+"#{zk_basename}.tar.gz"
+zk_download_location = "#{zk_base_url}"+"#{zk_basename}/"+"#{zk_basename}.tar.gz"
 
 Chef::Log.info("download url from #{zk_download_location} ")
 
