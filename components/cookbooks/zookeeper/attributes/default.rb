@@ -1,5 +1,5 @@
 default[:zookeeper][:version] = "3.4.6"
-default[:zookeeper][:mirror] = "http://central.maven.org/maven2/org/apache/zookeeper/zookeeper/#{default[:zookeeper][:version]}/zookeeper-#{default[:zookeeper][:version]}.tar.gz"
+default[:zookeeper][:mirror] = "https://repository.walmart.com/repository/apache-dist-archive/zookeeper/zookeeper-#{default[:zookeeper][:version]}/zookeeper-#{default[:zookeeper][:version]}.tar.gz"
 default[:zookeeper][:checksum] = 'e92b634e99db0414c6642f6014506cc22eefbea42cc912b57d7d0527fb7db132'
 default[:zookeeper][:install_dir] = "/usr/lib/zookeeper"
 default[:zookeeper][:user] = "zookeeper"

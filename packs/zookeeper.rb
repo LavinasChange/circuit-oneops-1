@@ -34,7 +34,7 @@ resource "zookeeper",
          :design => true,
          :requires => {"constraint" => "1..1"},
          :attributes => {
-             'mirror' => "$OO_CLOUD{nexus}/service/local/repositories/thirdparty/content/org/apache/zookeeper/",
+             'mirror' => "$OO_CLOUD{nexus}/repository/apache-dist-archive/zookeeper/",
              'install_dir' => "$OO_LOCAL{install_dir}",
              'version' => "$OO_LOCAL{version}",
              'jvm_args' => "-Xmx4g",
