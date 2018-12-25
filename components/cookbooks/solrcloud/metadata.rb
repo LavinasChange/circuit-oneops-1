@@ -15,7 +15,7 @@ grouping 'bom',
 attribute 'solr_version',
   :description => 'Solr Version',
   :required => 'required',
-  :default => '7.6.0',
+  :default => '7.2.1',
   :format => {
     :help => 'Select the specific version to set up solrcloud. Be sure the artifact uploaded to mirror repository',
     :category => '1.SolrCloud',
