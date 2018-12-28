@@ -73,7 +73,7 @@ begin
     live_nodes.each { |live|
         #live will be : "10.12.196.156:8983_solr" splitting with : and getting first element
         live_ip = live.split(":")[0]
-        if live.include? host_ip
+        if live_ip == host_ip
           contains_live_node = true
           break
         end
