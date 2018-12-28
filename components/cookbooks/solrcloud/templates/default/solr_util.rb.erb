@@ -142,6 +142,9 @@ def check_solr_process_status_based_on_core_health(host_ip, solr_port_no)
   # Get the json of collections from clusterstatus which includes shard and replica details
   cluster_status_collections = cluster_status["cluster"]["collections"]
 
+  # Get the json for live node from clusterstatus
+  live_nodes = cluster_status["cluster"]["live_nodes"]
+  
   cluster_status_collections.each { |coll_name, coll_info|
     unless coll_info["shards"].nil?
       shards = coll_info["shards"]
@@ -188,7 +191,7 @@ def check_solr_process_status_based_on_core_health(host_ip, solr_port_no)
 
   }
 
-  return total_cores, active_cores, recovering_cores, down_cores, recovery_failed_cores
+  return live_nodes, total_cores, active_cores, recovering_cores, down_cores, recovery_failed_cores
 end
 
 def solr_rest_api(host, port, url)
@@ -246,35 +249,4 @@ def solr_rest_api_get_auth(host, port, uri)
   return resp
 
 end
-
-def ping_cores(host_ip, port_no, cores, logger)
-  if (!cores.empty? && cores.length != 0)
-
-    ping_ok = 0
-
-    cores.each do |core|
-
-      ping_url = "/solr/#{core}/admin/ping?qi=internal_admin&wt=json"
-      ping_result = solr_rest_api(host_ip, port_no, ping_url)
-      ping_status =  ping_result["status"]
-      logger.info "Ping #{core} - #{ping_status}"
-      if (ping_status == "OK")
-        ping_ok += 1
-      end
-    end
-
-    if (cores.length == ping_ok)
-      logger.info "Solr is up, all cores ok"
-      return true
-    else
-      logger.info "Did not receive ping=OK for all the up cores."
-      return false
-    end
-  else
-    logger.info "cores list #{cores} is empty"
-    return true
-  end
-end
-
-
 
