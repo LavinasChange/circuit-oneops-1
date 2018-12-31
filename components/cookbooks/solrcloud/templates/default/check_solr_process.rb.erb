@@ -68,25 +68,25 @@ begin
 
     logger.info "\n\n cores_details => #{JSON.pretty_generate(cores_details)}"
 
-    contains_live_node = false
+    is_live_node = false
     #Check if the live node exist for current ip
     live_nodes.each { |live|
         #live will be : "10.12.196.156:8983_solr" splitting with : and getting first element
         live_ip = live.split(":")[0]
         if live_ip == host_ip
-          contains_live_node = true
+          is_live_node = true
           break
         end
     }
 
-    if(recovering_cores.length > 0) && contains_live_node
-      logger.info "Following recovering cores exist in the current solr node and they are all pingable. solr is up"
+    if(recovering_cores.length > 0) && is_live_node
+      logger.info "Recovering cores exist in the current solr node and they are present in live_nodes. solr is up"
       puts solr_up
-    elsif(active_cores.length > 0) && contains_live_node
-      logger.info "Following active cores exist in the current solr node and they are all pingable. solr is up"
+    elsif(active_cores.length > 0) && is_live_node
+      logger.info "Active cores exist in the current solr node and they are present in live_nodes. solr is up"
       puts solr_up
     elsif(total_cores.length > 0)
-      logger.info "Following cores exist in the current solr node which are neither active nor recovering. solr is down"
+      logger.info "No cores exist in the current solr node which are either active or recovering. solr is down"
       puts solr_down
     else
       logger.info "None of the conditions to make the solr process down is met. "
