@@ -1,5 +1,5 @@
 site = node['iis-website']
-dotnetframeworkcomponent = node['dotnetframework']
+dotnetframeworkcomponent = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /DotnetFramework/ }
 
 platform_name = node.workorder.box.ciName
 site_id = node.workorder.box.ciId
@@ -24,7 +24,7 @@ end
 
 website_physical_path = physical_path
 Chef::Log.info "dotnetframework parameters - #{dotnetframeworkcomponent}"
-if (dotnetframeworkcomponent.install_dotnetcore && File.directory("#{physical_path}/wwwroot"))
+if (dotnetframeworkcomponent.install_dotnetcore.nil? && dotnetframeworkcomponent.install_dotnetcore == "true" && File.directory("#{physical_path}/wwwroot"))
         heartbeat_path = "#{physical_path}/wwwroot/heartbeat.html"
 else
         heartbeat_path = "#{physical_path}/heartbeat.html"
