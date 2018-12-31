@@ -54,7 +54,7 @@ begin
   else
 
     logger.info "Checking cores for ip=#{host_ip}, port=#{port_no}"
-    total_cores, active_cores, recovering_cores, down_cores, recovery_failed_cores = check_solr_process_status_based_on_core_health(host_ip, port_no)
+    live_nodes, total_cores, active_cores, recovering_cores, down_cores, recovery_failed_cores = check_solr_process_status_based_on_core_health(host_ip, port_no)
 
     cores_details = Hash.new
 
@@ -68,14 +68,25 @@ begin
 
     logger.info "\n\n cores_details => #{JSON.pretty_generate(cores_details)}"
 
-    if(recovering_cores.length > 0) && (ping_cores(host_ip, port_no, recovering_cores, logger))
-      logger.info "Following recovering cores exist in the current solr node and they are all pingable. solr is up"
+    is_live_node = false
+    #Check if the live node exist for current ip
+    live_nodes.each { |live|
+        #live will be : "10.12.196.156:8983_solr" splitting with : and getting first element
+        live_ip = live.split(":")[0]
+        if live_ip == host_ip
+          is_live_node = true
+          break
+        end
+    }
+
+    if(recovering_cores.length > 0) && is_live_node
+      logger.info "Recovering cores exist in the current solr node and they are present in live_nodes. solr is up"
       puts solr_up
-    elsif(active_cores.length > 0) && (ping_cores(host_ip, port_no, active_cores, logger))
-      logger.info "Following active cores exist in the current solr node and they are all pingable. solr is up"
+    elsif(active_cores.length > 0) && is_live_node
+      logger.info "Active cores exist in the current solr node and they are present in live_nodes. solr is up"
       puts solr_up
     elsif(total_cores.length > 0)
-      logger.info "Following cores exist in the current solr node which are neither active nor recovering. solr is down"
+      logger.info "No cores exist in the current solr node which are either active or recovering. solr is down"
       puts solr_down
     else
       logger.info "None of the conditions to make the solr process down is met. "
