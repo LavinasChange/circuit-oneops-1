@@ -1,4 +1,6 @@
 site = node['iis-website']
+dotnetframeworkcomponent = node['dotnetframework']
+
 platform_name = node.workorder.box.ciName
 site_id = node.workorder.box.ciId
 
@@ -21,7 +23,11 @@ powershell_script "Allow Port #{binding_port}" do
 end
 
 website_physical_path = physical_path
-heartbeat_path = "#{physical_path}/heartbeat.html"
+if (dotnetframeworkcomponent.install_dotnetcore && File.directory("#{physical_path}/wwwroot"))
+        heartbeat_path = "#{physical_path}/wwwroot/heartbeat.html"
+else
+        heartbeat_path = "#{physical_path}/heartbeat.html"
+end
 
 node.set[:workorder][:rfcCi][:ciAttributes][:auto_provision] = site.cert_auto_provision
 ssl_certificate_exists = false
