@@ -23,6 +23,7 @@ powershell_script "Allow Port #{binding_port}" do
 end
 
 website_physical_path = physical_path
+Chef::Log.info "dotnetframework parameters - #{dotnetframeworkcomponent}"
 if (dotnetframeworkcomponent.install_dotnetcore && File.directory("#{physical_path}/wwwroot"))
         heartbeat_path = "#{physical_path}/wwwroot/heartbeat.html"
 else
