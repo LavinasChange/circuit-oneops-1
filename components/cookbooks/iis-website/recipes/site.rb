@@ -1,5 +1,4 @@
 site = node['iis-website']
-dotnetframeworkcomponent = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /DotnetFramework/ }
 
 platform_name = node.workorder.box.ciName
 site_id = node.workorder.box.ciId
@@ -23,12 +22,6 @@ powershell_script "Allow Port #{binding_port}" do
 end
 
 website_physical_path = physical_path
-Chef::Log.info "dotnetframework parameters - #{dotnetframeworkcomponent}"
-if (dotnetframeworkcomponent.install_dotnetcore.nil? && dotnetframeworkcomponent.install_dotnetcore == "true" && File.directory("#{physical_path}/wwwroot"))
-        heartbeat_path = "#{physical_path}/wwwroot/heartbeat.html"
-else
-        heartbeat_path = "#{physical_path}/heartbeat.html"
-end
 
 node.set[:workorder][:rfcCi][:ciAttributes][:auto_provision] = site.cert_auto_provision
 ssl_certificate_exists = false
@@ -102,10 +95,16 @@ end
   end
 end
 
+dotnetframework = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Dotnetframework/ }
 
+dotnetframework.each do | framework |
+  runtime = framework["ciAttributes"]
+  if runtime.has_key?("install_dotnetcore") && runtime.install_dotnetcore == "true"
+     node.set['workorder']['rfcCi']['ciAttributes']['install_dotnetcore'] = "true"
+  end
+end
 
 dotnetcore = node.workorder.rfcCi.ciAttributes
-
 if dotnetcore.has_key?("install_dotnetcore")
  runtime_version = "" if ((dotnetcore.install_dotnetcore == "true") || (runtime_version == "NoManagedCode"))
 end
@@ -128,16 +127,33 @@ iis_web_site platform_name do
   action [:create, :update]
 end
 
-template heartbeat_path do
-  source 'heartbeat.html.erb'
-  cookbook 'iis-website'
-  variables(
-    package_name: node['iis-website']['package_name'],
-    package_version: node['workorder']['rfcCi']['ciAttributes']['package_version'],
-    deployed_on: Time.new
-  )
-end
+Chef::Log.info("logging dotnetcore - #{dotnetcore}")
 
+
+if dotnetcore.has_key?("install_dotnetcore") && dotnetcore.install_dotnetcore == "true"
+    heartbeat_path = "#{physical_path}/wwwroot/heartbeat.html"
+    template heartbeat_path do
+       source 'heartbeat.html.erb'
+       cookbook 'iis-website'
+       only_if { ::File.directory?("#{physical_path}/wwwroot")}
+       variables(
+         package_name: node['iis-website']['package_name'],
+         package_version: node['workorder']['rfcCi']['ciAttributes']['package_version'],
+         deployed_on: Time.new
+      )
+    end
+else
+    heartbeat_path = "#{physical_path}/heartbeat.html"
+    template heartbeat_path do
+          source 'heartbeat.html.erb'
+          cookbook 'iis-website'
+          variables(
+            package_name: node['iis-website']['package_name'],
+            package_version: node['workorder']['rfcCi']['ciAttributes']['package_version'],
+            deployed_on: Time.new
+          )
+    end
+end
 
 iis_windows_authentication 'enabling windows authentication' do
   site_name platform_name
