@@ -272,7 +272,7 @@ else
       if [ $ver != '1.8.25' ]; then
         gem install bundler -v 1.15.4 --bindir /usr/bin --no-ri --no-rdoc --quiet
       else
-        gem install bundler --bindir /usr/bin --no-ri --no-rdoc --quiet
+        gem install bundler -v 1.17.3 --bindir /usr/bin --no-ri --no-rdoc --quiet
       fi
     fi
 
