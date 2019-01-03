@@ -127,9 +127,6 @@ iis_web_site platform_name do
   action [:create, :update]
 end
 
-Chef::Log.info("logging dotnetcore - #{dotnetcore}")
-
-
 if dotnetcore.has_key?("install_dotnetcore") && dotnetcore.install_dotnetcore == "true"
     heartbeat_path = "#{physical_path}/wwwroot/heartbeat.html"
     template heartbeat_path do
