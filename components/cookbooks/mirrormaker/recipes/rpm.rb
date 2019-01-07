@@ -9,25 +9,24 @@
 
 kafka_version = node.workorder.rfcCi.ciAttributes.version
 
+cloud = node.workorder.cloud.ciName
+
+mirror_url_key = "strati_kafka" 
+Chef::Log.info("Getting mirror service for #{mirror_url_key}, cloud: #{cloud}")
+
+mirror_svc = node[:workorder][:services][:mirror]
+mirror = JSON.parse(mirror_svc[cloud][:ciAttributes][:mirrors]) if !mirror_svc.nil?
+base_url = ''
 
 if kafka_version.to_i < 1
-	kafka_rpm = "kafka-#{kafka_version}.noarch.rpm"
-
-	cloud = node.workorder.cloud.ciName
-	mirror_url_key = "lola"
-	Chef::Log.info("Getting mirror service for #{mirror_url_key}, cloud: #{cloud}")
-
-	mirror_svc = node[:workorder][:services][:mirror]
-	mirror = JSON.parse(mirror_svc[cloud][:ciAttributes][:mirrors]) if !mirror_svc.nil?
-	base_url = ''
-	# Search for 'lola' mirror
+	kafka_rpm = "kafka-strati-2.11-#{kafka_version}-noarch.rpm"
 	base_url = mirror[mirror_url_key] if !mirror.nil? && mirror.has_key?(mirror_url_key)
 
 	if base_url.empty?
 		Chef::Log.error("#{mirror_url_key} mirror is empty for #{cloud}.")
 	end
 
-	kafka_download = base_url + "#{kafka_rpm}"
+	kafka_download = base_url + "2.11-#{kafka_version}/#{kafka_rpm}"
 
 	Chef::Log.info("kafka_download = #{kafka_download}")
 
@@ -61,6 +60,7 @@ if kafka_version.to_i < 1
 	end
 
 	execute "Add kafka" do
+	    user "root"
 		command "rpm -i #{node['mirrormaker'][:rpm_dir]}/kafka.rpm --force"
 	end
 
@@ -84,9 +84,20 @@ if kafka_version.to_i < 1
 	end
 else
    if kafka_version == "1.1.1"
-   		kafka_download = "https://repository.walmart.com/content/repositories/public/io/strati/df/messaging/kafka-strati/2.11-1.1.1/kafka-strati-2.11-1.1.1.tgz"
+	  base_url = mirror[mirror_url_key] if !mirror.nil? && mirror.has_key?(mirror_url_key)
+
+	  if base_url.empty?
+		Chef::Log.error("#{mirror_url_key} mirror is empty for #{cloud}.")
+	  end
+   	  kafka_download = base_url + "2.11-1.1.1/kafka-strati-2.11-1.1.1.tgz"
    else
-   		kafka_download = "https://repository.walmart.com/repository/apache-dist-archive/kafka/#{kafka_version}/kafka_2.11-#{kafka_version}.tgz"
+        mirror_url_key="apache_kafka"
+        base_url = mirror[mirror_url_key] if !mirror.nil? && mirror.has_key?(mirror_url_key)
+ 
+	    if base_url.empty?
+		    Chef::Log.error("#{mirror_url_key} mirror is empty for #{cloud}.")
+	    end
+   		kafka_download =  base_url + "#{kafka_version}/kafka_2.11-#{kafka_version}.tgz"
    end
    
    `rm -rf /usr/local/kafka/* && mkdir -p /usr/local/kafka`
