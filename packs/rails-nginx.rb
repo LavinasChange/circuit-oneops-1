@@ -14,8 +14,8 @@ resource "ruby",
   :design => true,
   :requires => { "constraint" => "1..1", "services" => "*mirror" },
   :attributes => {
-    "version"       => "1.8.7",
-    "gems"          => '{"bundler":""}'
+    'version' => '1.8.7',
+    'gems'    => '{"bundler":"-v 1.17.3"}'
   }
 
 resource "railsapp",

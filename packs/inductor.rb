@@ -58,7 +58,7 @@ resource "ruby",
     :services => "*mirror"
   },
   :attributes => {
-    "gems" => '{"bundler":""}'
+    'gems' => '{"bundler":"-v 1.17.3"}'
   }
 
 # inductor gem artifact
