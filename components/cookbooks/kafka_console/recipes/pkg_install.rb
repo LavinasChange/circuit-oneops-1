@@ -18,24 +18,24 @@ end
 Chef::Log.info("ciAttributes content: "+payLoad["ciAttributes"].inspect.gsub("\n"," "))
 kafka_version = payLoad["ciAttributes"]["version"]
 
-kafka_rpm = "kafka-#{kafka_version}.noarch.rpm"
-
 cloud = node.workorder.cloud.ciName
-mirror_url_key = "lola"
-Chef::Log.info("Getting mirror service for #{mirror_url_key}, cloud: #{cloud}")
 
 mirror_svc = node[:workorder][:services][:mirror]
 mirror = JSON.parse(mirror_svc[cloud][:ciAttributes][:mirrors]) if !mirror_svc.nil?
 base_url = ''
-# Search for Kafka mirror
-base_url = mirror[mirror_url_key] if !mirror.nil? && mirror.has_key?(mirror_url_key)
-
-if base_url.empty?
-  Chef::Log.error("#{mirror_url_key} mirror is empty for #{cloud}.")
-end
 
 if kafka_version.to_i < 1
-  kafka_download = base_url + "#{kafka_rpm}"
+    mirror_url_key = "strati_kafka" 
+    Chef::Log.info("Getting mirror service for #{mirror_url_key}, cloud: #{cloud}")
+
+    kafka_rpm = "kafka-strati-2.11-#{kafka_version}-noarch.rpm"
+	base_url = mirror[mirror_url_key] if !mirror.nil? && mirror.has_key?(mirror_url_key)
+
+	if base_url.empty?
+		Chef::Log.error("#{mirror_url_key} mirror is empty for #{cloud}.")
+	end
+
+	kafka_download = base_url + "2.11-#{kafka_version}/#{kafka_rpm}"
 
   execute "remove kafka" do
     user "root"
@@ -61,11 +61,15 @@ if kafka_version.to_i < 1
     command "rpm -i #{kafka_rpm} --force"
   end
 else
-  if kafka_version.to_i < 1
-    kafka_download = "https://repository.walmart.com/content/repositories/public/org/apache/kafka/kafka_2.11/#{kafka_version}/kafka_2.11-#{kafka_version}.tgz"
-  else
-    kafka_download = "https://repository.walmart.com/repository/apache-dist-archive/kafka/#{kafka_version}/kafka_2.11-#{kafka_version}.tgz"
-  end
+    mirror_url_key="apache_kafka"
+    Chef::Log.info("Getting mirror service for #{mirror_url_key}, cloud: #{cloud}")
+
+    base_url = mirror[mirror_url_key] if !mirror.nil? && mirror.has_key?(mirror_url_key)
+ 
+	if base_url.empty?
+		Chef::Log.error("#{mirror_url_key} mirror is empty for #{cloud}.")
+	end
+   	kafka_download =  base_url + "#{kafka_version}/kafka_2.11-#{kafka_version}.tgz"
   
   `rm -rf /usr/local/kafka/* && mkdir -p /usr/local/kafka`
 
@@ -85,7 +89,13 @@ end
 
 kafka_manager_rpm = node['kafka_console']['console']['filename']
 
-kafka_manager_download = base_url + "#{kafka_manager_rpm}"
+mirror_url_key="kafka_manager"
+base_url = mirror[mirror_url_key] if !mirror.nil? && mirror.has_key?(mirror_url_key)
+ 
+if base_url.empty?
+	Chef::Log.error("#{mirror_url_key} mirror is empty for #{cloud}.")
+end
+kafka_manager_download = base_url + "1.3.3.6-1/#{kafka_manager_rpm}"
 
 # remove kafka-manager, if it has been installed
 execute "remove kafka-manager" do
