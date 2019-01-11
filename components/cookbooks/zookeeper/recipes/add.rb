@@ -14,8 +14,10 @@ Chef::Log.info("exported_jars path = #{node[:zookeeper][:exported_jars]}")
 #zk_loc_basename = "#{node[:zookeeper][:version]}"
 zk_basename = "zookeeper-#{node[:zookeeper][:version]}"
 ci = node.workorder.rfcCi.ciAttributes;
-zk_base_url = ci['mirror']
-zk_download_location = "#{zk_base_url}"+"#{zk_basename}/"+"#{zk_basename}.tar.gz"
+# zk_base_url = ci['mirror']
+zk_base_url = "https://repository.walmart.com/repository/apache-dist-archive/zookeeper/"
+zk_download_location= "#{zk_base_url}"+"#{zk_basename}/"+"#{zk_basename}.tar.gz"
+
 
 Chef::Log.info("download url from #{zk_download_location} ")
 
