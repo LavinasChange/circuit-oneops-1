@@ -334,6 +334,19 @@ module AzureCompute
     def get_vm_size_id(node)
       return nil if node['workorder']['rfcCi']['rfcAction'] == 'delete'
 
+      if node['size_id'].nil?
+        size = node['workorder']['rfcCi']['ciAttributes']['size']
+        OOLog.info("Size #{size} not found in cloud config, using direct size.")
+
+        mgmt = @compute_client.instance_variable_get('@compute_mgmt_client')
+        sizes = mgmt.instance_variable_get('@virtual_machine_sizes').list(@location).value
+        if a.detect{ |s| s.name == size}
+          return size
+        else
+          OOLog.fatal("The selected size #{size} is invalid")
+        end
+      end
+
       return node['size_id'] unless Utils.valid_json?(node['size_id'])
 
       node['workorder']['payLoad']['RequiresComputes'].each do |compute|

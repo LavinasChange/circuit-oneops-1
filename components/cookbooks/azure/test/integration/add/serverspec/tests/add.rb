@@ -135,7 +135,10 @@ describe "azure node::create" do
           sizemap = JSON.parse(cloud[:sizemap])
           size_id = sizemap[$node[:workorder][:rfcCi]["ciAttributes"]["size"]]
 
-          if Utils.valid_json?(size_id)
+          if size_id.nil?
+            size = $node['workorder']['rfcCi']['ciAttributes']['size']
+            expect(vm.vm_size).to eq(size)
+          elsif Utils.valid_json?(size_id)
             vm_list = virtual_machine_lib.get_resource_group_vms(resource_group_name)
 
             is_new_cloud = Utils.is_new_cloud($node)
