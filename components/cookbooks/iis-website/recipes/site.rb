@@ -13,6 +13,7 @@ physical_path = "#{site.physical_path}/#{site.package_name}/#{node['workorder'][
 log_directory_path = site.log_file_directory
 sc_directory_path = site.sc_file_directory
 dc_directory_path = site.dc_file_directory
+static_folder_name = "wwwroot"
 
 site_bindings = [{ 'protocol' => binding_type,
                    'binding_information' => "*:#{binding_port}:" }]
@@ -128,11 +129,12 @@ iis_web_site platform_name do
 end
 
 if dotnetcore.has_key?("install_dotnetcore") && dotnetcore.install_dotnetcore == "true"
-    heartbeat_path = "#{physical_path}/wwwroot/heartbeat.html"
+    static_folder_name = (site.static_folder_name.nil?||site.static_folder_name.empty?)?static_folder_name:site.static_folder_name
+    heartbeat_path = "#{physical_path}/#{static_folder_name}/heartbeat.html"
     template heartbeat_path do
        source 'heartbeat.html.erb'
        cookbook 'iis-website'
-       only_if { ::File.directory?("#{physical_path}/wwwroot")}
+       only_if { ::File.directory?("#{physical_path}/#{static_folder_name}")}
        variables(
          package_name: node['iis-website']['package_name'],
          package_version: node['workorder']['rfcCi']['ciAttributes']['package_version'],
