@@ -97,7 +97,7 @@ module OO
       end
 
       def delete
-        @root_folder.DeleteTask(@task_name, 0) if task_exist?(@task_name)
+        @root_folder.DeleteTask(@task_name, 0)
       end
 
       def assign_attributes_to_task(task_attributes)
