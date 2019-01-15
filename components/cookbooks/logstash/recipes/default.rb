@@ -73,6 +73,13 @@ template "/etc/init.d/logstash" do
   mode 0700
 end
 
+template '/etc/logrotate.d/logstash' do
+  source 'logrotate.erb'
+  owner 'root'
+  group 'root'
+  mode 0o644
+end
+
 cookbook_file '/opt/nagios/libexec/check_logstash' do
   source 'check_logstash.rb'
   owner 'root'
