@@ -41,6 +41,7 @@ end
 
 if(provider =~ /azure/ && ostype.downcase.include?('windows') && server_name.size > 15)
   server_name = server_name.slice((server_name.size - 15)..-1)
+  server_name = server_name[1..-1] if server_name.start_with?('-')
   Chef::Log.info("Truncated server name #{server_name} to 15 chars. Provider: #{provider} OSType: #{ostype}")
 end
 
