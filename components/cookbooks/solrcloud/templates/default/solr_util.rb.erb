@@ -222,7 +222,6 @@ def solr_rest_api_get_auth(host, port, uri)
 
   http = Net::HTTP.new(host, port)
   http.open_timeout = 50 #timeout
-  http.read_timeout = 50 #response wait time
   http.use_ssl = false
 
   username = nil
@@ -244,9 +243,7 @@ def solr_rest_api_get_auth(host, port, uri)
     end
 
     resp, data = http.request(req)
-
   end
-
   return resp
 
 end
