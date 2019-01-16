@@ -100,7 +100,7 @@ begin
 rescue Net::ReadTimeout
   logger.info "ReadTimeout Error Occurred."
   logger.close
-  puts "Solr process is down. #{solr_down}"
+  puts "ReadTimeout Exception Occurred. #{solr_down}"
 rescue Errno::ECONNREFUSED
   logger.info "Exception occured, declaring solr process down"
   logger.close
