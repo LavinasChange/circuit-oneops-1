@@ -137,11 +137,7 @@ def check_solr_process_status_based_on_core_health(host_ip, solr_port_no)
 
   # Get the cluster status
   clusterstatus_url = "#{solrCollectionUrl}action=CLUSTERSTATUS&wt=json"
-  begin
-    cluster_status = solr_rest_api(host_ip, solr_port_no, clusterstatus_url)
-  rescue Net::ReadTimeout
-    raise Net::ReadTimeout
-  end
+  cluster_status = solr_rest_api(host_ip, solr_port_no, clusterstatus_url)
   # Get the json of collections from clusterstatus which includes shard and replica details
   cluster_status_collections = cluster_status["cluster"]["collections"]
 
@@ -199,11 +195,8 @@ end
 
 def solr_rest_api(host, port, url)
 
-  begin
-    response = solr_rest_api_get_auth(host, port, url)
-  rescue Net::ReadTimeout
-    raise Net::ReadTimeout
-  end
+  response = solr_rest_api_get_auth(host, port, url)
+
   if response != nil then
     response_body = response.body
     if !response_body.empty?
@@ -250,11 +243,8 @@ def solr_rest_api_get_auth(host, port, uri)
       req.basic_auth(username, password)
     end
 
-    begin
-      resp, data = http.request(req)
-    rescue Net::ReadTimeout
-      raise Net::ReadTimeout
-    end
+    resp, data = http.request(req)
+
   end
 
   return resp
