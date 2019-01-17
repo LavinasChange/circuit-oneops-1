@@ -20,26 +20,24 @@ chef_gem 'zookeeper' do
 end
 Chef::Log.info("finished installing zookeeper gem")
 
-
-kafka_rpm = "kafka-#{kafka_version}.noarch.rpm"
-
 cloud = node.workorder.cloud.ciName
-mirror_url_key = "lola"
-Chef::Log.info("Getting mirror service for #{mirror_url_key}, cloud: #{cloud}")
 
 mirror_svc = node[:workorder][:services][:mirror]
 mirror = JSON.parse(mirror_svc[cloud][:ciAttributes][:mirrors]) if !mirror_svc.nil?
 base_url = ''
 
-# Search for Kafka mirror
-base_url = mirror[mirror_url_key] if !mirror.nil? && mirror.has_key?(mirror_url_key)
-
-if base_url.empty?
-  Chef::Log.error("#{mirror_url_key} mirror is empty for #{cloud}.")
-end
-
 if kafka_version.to_i < 1
-   kafka_download = base_url + "#{kafka_rpm}"
+   mirror_url_key = "strati_kafka"
+   Chef::Log.info("Getting mirror service for #{mirror_url_key}, cloud: #{cloud}")
+
+   base_url = mirror[mirror_url_key] if !mirror.nil? && mirror.has_key?(mirror_url_key)
+
+   if base_url.empty?
+      Chef::Log.error("#{mirror_url_key} mirror is empty for #{cloud}.")
+   end
+   
+   kafka_rpm = "kafka-strati-2.11-#{kafka_version}-noarch.rpm"
+   kafka_download = base_url + "2.11-#{kafka_version}/#{kafka_rpm}"
 
    execute "remove kafka" do
      user "root"
@@ -65,7 +63,13 @@ if kafka_version.to_i < 1
      command "rpm -i #{kafka_rpm} --force"
    end
 else
-   kafka_download = "https://repository.walmart.com/repository/apache-dist-archive/kafka/#{kafka_version}/kafka_2.11-#{kafka_version}.tgz"
+    mirror_url_key="apache_kafka"
+    base_url = mirror[mirror_url_key] if !mirror.nil? && mirror.has_key?(mirror_url_key)
+ 
+	if base_url.empty?
+		Chef::Log.error("#{mirror_url_key} mirror is empty for #{cloud}.")
+	end
+    kafka_download = base_url + "#{kafka_version}/kafka_2.11-#{kafka_version}.tgz"
    `rm -rf /usr/local/kafka/* && mkdir -p /usr/local/kafka`
 
    remote_file "/usr/local/kafka/kafka_2.11-#{kafka_version}.tgz" do
@@ -109,9 +113,14 @@ else
   Chef::Log.error("we currently support redhat, centos, fedora. You are using some OS other than those.")
 end
 
+#jmxtrans and kafka gem are in strati_kafka repo directories
+ mirror_url_key = "strati_kafka"
+   Chef::Log.info("Getting mirror service for #{mirror_url_key}, cloud: #{cloud}")
+
+   base_url = mirror[mirror_url_key] if !mirror.nil? && mirror.has_key?(mirror_url_key)
 
 jmxtrans_rpm = node['kafka']['jmxtrans']['rpm']
-jmxtrans_download = base_url + "#{jmxtrans_rpm}"
+jmxtrans_download = base_url + "jmxtrans-253/kafka-strati-#{jmxtrans_rpm}"
 
 # remove jmxtrans
 execute "remove jmxtrans" do
@@ -139,7 +148,7 @@ execute 'install jmxtrans' do
 end
 
 kafka_gem_rpm = node['kafka']['gem']['rpm']
-kafka_gem_download = base_url + "#{kafka_gem_rpm}"
+kafka_gem_download = base_url + "kafka-gem-1.0/kafka-strati-#{kafka_gem_rpm}"
 
 # remove kafka-gem
 execute "remove kafka-gem" do

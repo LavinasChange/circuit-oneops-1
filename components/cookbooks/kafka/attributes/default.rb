@@ -79,4 +79,4 @@ default['kafka']['zk_quorum_size'] = '3'
 default['kafka']['jmxtrans']['rpm'] = 'jmxtrans-253.rpm'
 
 # kafka gem
-default['kafka']['gem']['rpm'] = 'kafka-gem-1.0.noarch.rpm'
+default['kafka']['gem']['rpm'] = 'kafka-gem-1.0-noarch.rpm'
