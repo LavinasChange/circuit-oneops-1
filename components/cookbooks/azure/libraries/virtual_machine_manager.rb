@@ -332,22 +332,25 @@ module AzureCompute
     end
 
     def get_vm_size_id(node)
-      return nil if node['workorder']['rfcCi']['rfcAction'] == 'delete'
+      rfcCi = node['workorder']['rfcCi']
+      return nil if rfcCi['rfcAction'] == 'delete'
 
-      if node['size_id'].nil?
-        size = node['workorder']['rfcCi']['ciAttributes']['size']
+      sizemap = JSON.parse(@compute_service['sizemap'])
+      size = rfcCi['ciAttributes']['size']
+      size_id = sizemap[size]
+      if size_id.nil?
         OOLog.info("Size #{size} not found in cloud config, using direct size.")
 
         mgmt = @compute_client.instance_variable_get('@compute_mgmt_client')
         sizes = mgmt.instance_variable_get('@virtual_machine_sizes').list(@location).value
-        if a.detect{ |s| s.name == size}
+        if sizes.detect{ |s| s.name == size}
           return size
         else
           OOLog.fatal("The selected size #{size} is invalid")
         end
       end
 
-      return node['size_id'] unless Utils.valid_json?(node['size_id'])
+      return size_id unless Utils.valid_json?(size_id)
 
       node['workorder']['payLoad']['RequiresComputes'].each do |compute|
         if compute['ciBaseAttributes'].key?(:size)
@@ -356,7 +359,7 @@ module AzureCompute
 
           OOLog.info("Change in VM Size Detected. Old Size: #{old_size}. New Size: #{new_size}. Getting the latest flavor for new size")
 
-          return pick_latest_vm_size(node['size_id']) if new_size != old_size
+          return pick_latest_vm_size(size_id) if new_size != old_size
         elsif compute['ciAttributes'].key?(:vm_size)
           OOLog.info('Getting the VM size flavor from the node')
           return compute['ciAttributes']['vm_size']
@@ -369,7 +372,7 @@ module AzureCompute
 
       if vm_list.count.eql? 0
         OOLog.info("No VM for size #{@oosize_id} is available. Fetching the latest flavor for size #{@oosize_id}")
-        pick_latest_vm_size(node['size_id'])
+        pick_latest_vm_size(size_id)
       else
         OOLog.info('Getting VM size from VMs found on the portal')
         vm = vm_list.first
