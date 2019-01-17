@@ -138,7 +138,6 @@ def check_solr_process_status_based_on_core_health(host_ip, solr_port_no)
   # Get the cluster status
   clusterstatus_url = "#{solrCollectionUrl}action=CLUSTERSTATUS&wt=json"
   cluster_status = solr_rest_api(host_ip, solr_port_no, clusterstatus_url)
-
   # Get the json of collections from clusterstatus which includes shard and replica details
   cluster_status_collections = cluster_status["cluster"]["collections"]
 
@@ -245,7 +244,6 @@ def solr_rest_api_get_auth(host, port, uri)
 
     resp, data = http.request(req)
   end
-
   return resp
 
 end
