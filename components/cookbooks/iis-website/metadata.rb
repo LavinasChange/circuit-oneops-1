@@ -207,12 +207,11 @@ attribute 'anonymous_authentication',
   }
 
 attribute 'static_folder_name',
-    :description => 'Name of Folder holding all static data - images, css, js. Useful for .NET Core applications',
+    :description => 'Static Data Folder Name',
     :default     => '',
     :format      => {
-      :help      => 'Enable anonymous authentication',
+      :help      => 'Name of Folder holding all static data - images, css, js. Useful for .NET Core applications',
       :category  => '2.IIS Web site',
-      :form     => {'field' => 'checkbox'},
       :order     => 13
     }
 attribute 'iis_iusrs_group_service_accounts',

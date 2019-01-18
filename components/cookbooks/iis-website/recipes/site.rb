@@ -129,7 +129,9 @@ iis_web_site platform_name do
 end
 
 if dotnetcore.has_key?("install_dotnetcore") && dotnetcore.install_dotnetcore == "true"
-    static_folder_name = (site.static_folder_name.nil?||site.static_folder_name.empty?)?static_folder_name:site.static_folder_name
+    if site.has_key?("static_folder_name")
+         static_folder_name =  (site.static_folder_name.nil?||site.static_folder_name.empty?)?static_folder_name:site.static_folder_name
+    end
     heartbeat_path = "#{physical_path}/#{static_folder_name}/heartbeat.html"
     template heartbeat_path do
        source 'heartbeat.html.erb'
