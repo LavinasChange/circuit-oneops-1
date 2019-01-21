@@ -27,3 +27,8 @@ def get_compute(storage_provider, compute_service, instance_id, resource_group_n
   end
   compute
 end
+
+# Convert size attribute value to gigabytes
+def size_g(size)
+  size[-1] == 'T' ? size.to_i * 1024 : size.to_i
+end

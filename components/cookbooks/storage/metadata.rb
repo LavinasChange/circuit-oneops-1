@@ -20,9 +20,10 @@ attribute 'size',
   :required => "required",
   :default => "100G",
   :format => { 
-    :help => 'Total storage size to be allocated specified in GB (Note: specific raid configurations will result in smaller usable volume size)',
+    :help => 'Total storage size to be allocated specified in GB or TB (Note: specific raid configurations will result in smaller usable volume size)',
     :category => '1.Configuration',
-    :order => 1
+    :order => 1,
+    :pattern => '[0-9]+[T,G]'
   }
 
 attribute 'slice_count',
@@ -33,7 +34,7 @@ attribute 'slice_count',
     :help => 'Number of slices / block storage volumes (Note: needs to be even number if you intend to use it for raid10 or raid1 volumes)',
     :category => '1.Configuration',
     :order => 2,
-    :patter => "[0-9]+",
+    :pattern => '[0-9]+',
     :editable => true
   }
 

@@ -72,9 +72,9 @@ if $storage && $storage['ciAttributes']['slice_count'].to_i > 1 &&
 
   describe "Logical volume #{logical_name}" do
     let (:cmd) { "lvs --noheadings --segments #{lvm_dev_id} | awk '{print $5}'" }
-    let (:lvtype) { execute_command(cmd).stdout.chomp }
+    let (:lvtype) { execute_command(cmd).stdout.chomp.split("\n") }
     it "is striped" do
-      expect(lvtype).to eql('striped')
+      expect(lvtype).to all(eql('striped'))
     end
   end
 end
