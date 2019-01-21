@@ -21,24 +21,20 @@ cloud_name = node[:workorder][:cloud][:ciName]
 provider_class = node[:workorder][:services][:storage][cloud_name][:ciClassName].downcase
 include_recipe "shared::set_provider_new"
 
-dev_map = node[:workorder][:rfcCi][:ciAttributes][:device_map]
-return if dev_map.nil?
+storage = StorageComponent::Storage.new(node)
+devices = storage.storage_devices
+
+return if devices.empty?
 
 if provider_class =~ /azure/
   Utils.set_proxy(node[:workorder][:payLoad][:OO_CLOUD_VARS])
-  rg_manager = AzureBase::ResourceGroupManager.new(node)
-  resource_group = rg_manager.rg_name
+  resource_group = storage.rg_name
   instance_name = node[:workorder][:payLoad][:DependsOn].select{|d| (d[:ciClassName].split('.').last == 'Compute') }.first[:ciAttributes][:instance_name]
   server = get_compute(provider_class, node[:storage_provider], instance_name, resource_group)
 end
 
-dev_map.split(" ").each do |dev|
-    if provider_class =~ /azure/ && dev.split(":").size == 5
-      resource_group_name, storage_account_name, ciID, slice_size, dev_id = dev.split(':')
-      vol_id = [ciID, 'datadisk',dev.split('/').last.to_s].join('-')
-    else
-      vol_id = dev.split(":")[0]
-    end
+devices.each do |dev|
+    vol_id = dev['id']
     Chef::Log.info("destroying: "+vol_id)
     ok = false
     retry_count = 0
@@ -82,10 +78,9 @@ dev_map.split(" ").each do |dev|
       begin
         if provider_class =~ /azure/ && vol_id =~ /datadisk/
           #Unmanaged disks
-          vhd_blobname = storage_account_name + '-' + vol_id + ".vhd"
-          storage_service = get_azure_storage_service(rg_manager.creds, resource_group_name, storage_account_name)
+          vhd_blobname = storage.storage_account_name + '-' + vol_id
+          storage_service = storage.storage_service
           storage_service.delete_disk(vhd_blobname, options = {})
-
         elsif !volume.nil?
           volume.destroy
         end
@@ -108,4 +103,4 @@ dev_map.split(" ").each do |dev|
       msg = JSON.parse(e.response[:body])[error_key]['message']
       exit_with_error "couldnt destroy: #{vol_id} because #{msg} .. #{error_key}"
     end
-end #dev_map.split(" ").each do |dev|
+end #devices.each do |dev|

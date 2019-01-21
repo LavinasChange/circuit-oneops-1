@@ -374,8 +374,9 @@ ruby_block 'create-storage-non-ephemeral-volume' do
     end
 
     if device_list != ""
-      if rfc_action != "update"
-        # yes | and -ff needed sometimes
+      `vgs #{platform_name}`
+      if $?.to_i != 0
+      # yes | and -ff needed sometimes
         Chef::Log.info("vgcreate #{platform_name} #{device_list} ..."+`yes | vgcreate -ff #{platform_name} #{device_list}`)
       else
         Chef::Log.info("vgextend #{platform_name} #{device_list} ..."+`yes | vgextend -ff #{platform_name} #{device_list}`)
@@ -392,7 +393,7 @@ ruby_block 'create-storage-non-ephemeral-volume' do
     if $?.to_i != 0
       execute_command("yes | lvcreate #{l_switch} #{size} #{striped} -n #{logical_name} #{platform_name}",true)
     else
-      Chef::Log.warn("logical volume #{platform_name}/#{logical_name} already exists and hence cannot recreate .. prefer replacing compute")
+      Chef::Log.warn("logical volume #{platform_name}/#{logical_name} already exists.")
     end
 
 
@@ -430,7 +431,11 @@ ruby_block 'create-storage-non-ephemeral-volume' do
       if (size == "0G" || ((!storageUpdated) && size =~ /%/))
         Chef::Log.info("Storage is not extended")
       else
-        execute_command("yes |lvextend #{l_switch} +#{size} /dev/#{platform_name}/#{logical_name}",true)
+        rc = execute_command("yes |lvextend #{l_switch} +#{size} /dev/#{platform_name}/#{logical_name}")
+        if !rc.valid_exit_codes.include?(rc.exitstatus) &&
+          rc.stderr !~ /matches existing size/
+          exit_with_error(rc.stderr)
+        end
       end
     end
 

@@ -24,34 +24,44 @@
 # only 15*8 devices available from sdi1-sdp15 (efgh used for ephemeral)
 #
 
-require File.expand_path('../../../azure_base/libraries/utils.rb', __FILE__)
 require 'json'
 include_recipe 'shared::set_provider_new'
 
 rfcCi = node[:workorder][:rfcCi]
 ciAttr = rfcCi[:ciAttributes]
-size_config = ciAttr[:size]
-size_scale = size_config[-1,1]
-size = size_config.to_i.to_s.to_i
 action = rfcCi[:rfcAction]
+provider = node['storage_provider_class']
+
 if node.workorder.has_key?("payLoad") && node.workorder.payLoad.has_key?("volumes")
   mode = node.workorder.payLoad.volumes[0].ciAttributes["mode"]
 else
   mode = "no-raid"
 end
 
-Chef::Log.info("Storage Requested : " + size_config)
-
-if size_config == "-1"
-  Chef::Log.info("Skipping Storage Allocation Due to Size is -1")
-  return true
+size = size_g(ciAttr['size'])
+if action == 'update' && mode != 'no-raid'
+  exit_with_error('RAID expansion is not supported')
 end
 
-slice_count = ciAttr[:slice_count].to_i
-slice_count = 1 if slice_count.nil?
-Chef::Log.info("size_scale: "+size_scale)
-size *= 1024 if size_scale == "T"
-exit_with_error("Minimum volume size should be 10G") if size < 10
+# Functionality encapsulated in a class, provider specific methods
+# are implemented separately for different providers
+storage = StorageComponent::Storage.new(node)
+old_size = storage.total_size_gb
+Chef::Log.info("Storage size requested: #{size}G, current size is #{old_size}G")
+if old_size > size
+  exit_with_error('Cannot decrease storage size, please roll back')
+elsif old_size == size
+  Chef::Log.info('Storage size is not changing, skipping the deployment')
+  puts "***RESULT:device_map="+storage.device_map.join(" ")
+  return
+else
+  size = size - old_size
+end
+
+initial_slice_count = ciAttr[:slice_count].to_i
+actual_slice_count = storage.storage_devices.size
+slice_count = initial_slice_count - (actual_slice_count % initial_slice_count)
+final_slice_count = initial_slice_count * (actual_slice_count.to_i / initial_slice_count + 1)
 
 if slice_count == 1
   slice_size = size.to_i
@@ -63,55 +73,12 @@ elsif mode == "raid5"
   slice_size = size.to_f/(slice_count.to_i-1).ceil
 end
 
-Chef::Log.info("raid10 - #{slice_count} slices of: #{slice_size}")
-
-# Create the dev/vols and store the map to device_map attr ... volume::add will attach them to the compute
-dev_list = ""
-vols = Array.new
-old_slice_count = slice_count
-old_size = size
-if action == "update"
-  exit_with_error("Could not extend volume for raid mode. Recreate volumes in no-raid mode for volume extension support") if mode != "no-raid"
-  if rfcCi[:ciBaseAttributes].has_key?(:size)
-    old_size = rfcCi[:ciBaseAttributes][:size]
-  else
-    Chef::Log.info("Storage requested is same as before. #{old_size}G")
-    return true
-  end
-  old_slice_count = rfcCi[:ciBaseAttributes][:slice_count].to_i if rfcCi[:ciBaseAttributes].has_key?(:slice_count)
-  scale = old_size[-1,1]
-  oldsize = old_size[0..-2].to_i
-  size = size.to_i
-  old_size = old_size.to_i
-  if old_slice_count > slice_count
-    exit_with_error("Slice count cant be decreased")
-  else
-    slice_count = slice_count - old_slice_count
-    if slice_count == 0
-      slice_count = 1
-    end
-  end
-  old_size *= 1024 if scale == "T"
-  if size > old_size
-    slice_size = size - old_size
-    exit_with_error("Size requested is too small") if slice_size < 10
-  elsif size == old_size
-    Chef::Log.info("Storage requested is same as before. #{old_size}G")
-    return true
-  else
-    exit_with_error("Size of storage can not be decreased")
-  end
-  vols = ciAttr[:device_map].split(" ") if ciAttr.has_key?(:device_map)
-  if mode == "no-raid" || mode == "raid0"
-    slice_size = (slice_size.to_f / slice_count.to_f).ceil
-  else
-    slice_size = (slice_size.to_f / slice_count.to_f).ceil*2
-  end
+Chef::Log.info("Adding storage: #{size}GB total, #{slice_count} slices of #{slice_size}GB each")
+if slice_size < 10 && provider =~ /cinder/
+  exit_with_error("Minimum slice size should be 10G for #{provider}")
 end
-exit_with_error("Minimum slice size should be 10G") if slice_size < 10
 
 # openstack+kvm doesn't use explicit device names, just set and order
-openstack_dev_set = ['b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v']
 block_index = ""
 ["p","o","n","m","l","k","j","i"].each do |i|
   dev = "/dev/vxd#{i}0"
@@ -121,29 +88,25 @@ block_index = ""
   end
 end
 
-# lame have to use the sdX device for the call but show up as xvdX (for 11.04)
-Array(1..slice_count).each do |i|
-  dev = ""
-  if node.storage_provider_class =~ /cinder/
-    dev = "/dev/vd#{openstack_dev_set[i]}"
-  elsif node.storage_provider_class =~ /azure/
-    dev = "/dev/sd#{openstack_dev_set[i]}"
+# TO-DO replace the following functionality with a new method in Storage class
+Array(actual_slice_count+1..final_slice_count).each do |i|
+
+  if provider =~ /cinder|azure/
+    dev = storage.planned_device_id(i)
   else
     dev = "/dev/xvd#{block_index}#{i.to_s}"
   end
-
-  Chef::Log.info("adding dev: #{dev} size: #{slice_size}G")
-  Chef::Log.info("node.storage_provider_class"+node.storage_provider_class)
+  Chef::Log.info("Adding dev: #{dev} size: #{slice_size}G with provider #{provider}")
 
   volume = nil
-  case node.storage_provider_class
+  case provider
   when /cinder/
     begin
       include_recipe 'storage::node_lookup'
       vol_name = rfcCi[:ciName] + "-" + rfcCi[:ciId].to_s
       Chef::Log.info("Volume type selected in the storage component:"+node.volume_type_from_map)
       Chef::Log.info("Creating volume of size:#{slice_size} , volume_type:#{node.volume_type_from_map}, volume_name:#{vol_name} .... ")
-      volume = node.storage_provider.volumes.new :device => dev, :size => slice_size, :name => vol_name,
+      volume = node.storage_provider.volumes.new :size => slice_size, :name => vol_name,
         :description => dev, :display_name => vol_name, :volume_type => node.volume_type_from_map
       volume.save
     rescue Excon::Errors::RequestEntityTooLarge => e
@@ -202,7 +165,7 @@ Array(1..slice_count).each do |i|
       else
         account_type = 'Standard_LRS'
       end
-      vol_name = rfcCi[:ciName] + '-' + rfcCi[:ciId].to_s + '-' + dev.split('/').last.to_s
+      vol_name = rfcCi[:ciName] + '-' + rfcCi[:ciId].to_s + '-' + i.to_s
 
       availability_set_response = node[:storage_provider].availability_sets.get(rg_manager.rg_name, as_manager.as_name)
 
@@ -240,11 +203,15 @@ Array(1..slice_count).each do |i|
     volume = node.storage_provider.volumes.new :device => dev, :size => slice_size, :availability_zone => avail_zone
   end
 
-  if node.storage_provider_class !~ /azuredatadisk/
+  if provider !~ /azuredatadisk/
     volume_dev = volume.id.to_s + ':' + dev
   end
   Chef::Log.info("Adding #{volume_dev} to device map")
-  vols.push(volume_dev)
+  device_entry = {
+    'id'      => volume_dev.split(':')[0..-2].join(':'),
+    'size_gb' => slice_size
+  }
+  storage.storage_devices.push(device_entry)
 end
 
-puts "***RESULT:device_map="+vols.join(" ")
+puts "***RESULT:device_map="+storage.device_map.join(" ")
