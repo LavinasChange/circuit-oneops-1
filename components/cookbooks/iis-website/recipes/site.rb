@@ -127,33 +127,27 @@ iis_web_site platform_name do
   certificate_hash thumbprint if ssl_certificate_exists
   action [:create, :update]
 end
-
+static_folder_path = ""
 if dotnetcore.has_key?("install_dotnetcore") && dotnetcore.install_dotnetcore == "true"
     if site.has_key?("static_folder_name")
          static_folder_name =  (site.static_folder_name.nil?||site.static_folder_name.empty?)?static_folder_name:site.static_folder_name
     end
     heartbeat_path = "#{physical_path}/#{static_folder_name}/heartbeat.html"
-    template heartbeat_path do
-       source 'heartbeat.html.erb'
-       cookbook 'iis-website'
-       only_if { ::File.directory?("#{physical_path}/#{static_folder_name}")}
-       variables(
-         package_name: node['iis-website']['package_name'],
-         package_version: node['workorder']['rfcCi']['ciAttributes']['package_version'],
-         deployed_on: Time.new
-      )
-    end
+    static_folder_path =  "#{physical_path}/#{static_folder_name}"
 else
     heartbeat_path = "#{physical_path}/heartbeat.html"
-    template heartbeat_path do
-          source 'heartbeat.html.erb'
-          cookbook 'iis-website'
-          variables(
-            package_name: node['iis-website']['package_name'],
-            package_version: node['workorder']['rfcCi']['ciAttributes']['package_version'],
-            deployed_on: Time.new
-          )
-    end
+    static_folder_path = "#{physical_path}"
+end
+
+template heartbeat_path do
+   source 'heartbeat.html.erb'
+   cookbook 'iis-website'
+   only_if {::File.directory?("#{static_folder_path}")}
+   variables(
+     package_name: node['iis-website']['package_name'],
+     package_version: node['workorder']['rfcCi']['ciAttributes']['package_version'],
+     deployed_on: Time.new
+  )
 end
 
 iis_windows_authentication 'enabling windows authentication' do

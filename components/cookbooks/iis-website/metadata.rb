@@ -210,7 +210,7 @@ attribute 'static_folder_name',
     :description => 'Static Data Folder Name',
     :default     => '',
     :format      => {
-      :help      => 'Name of Folder holding all static data - images, css, js. Useful for .NET Core applications',
+      :help      => 'Name of Folder holding all static data - images, css, js. Useful for .NET Core applications. Default value is wwwroot',
       :category  => '2.IIS Web site',
       :order     => 13
     }
