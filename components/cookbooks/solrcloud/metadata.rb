@@ -455,6 +455,8 @@ recipe "start", "Start Solr JVM Process"
 recipe "stop", "Stop Solr JVM Process"
 recipe "restart", "Restart Solr JVM Process"
 recipe "performance_test", "Performance Test"
+recipe "delete_write_permissions_for_ro_user", "Delete write permission for read-only user"
+recipe "add_write_permissions_for_ro_user", "Add write permission for read-only user"
 
 recipe "uploadsolrconfig",
   :description => 'Upload solr config to zookeeper',
