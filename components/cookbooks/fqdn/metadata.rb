@@ -102,7 +102,7 @@ attribute 'service_type',
             :order     => 1,
             :form      => {'field'              => 'select',
                            'options_for_select' => {:default => [['torbit', 'torbit'],
-                                                                 ['netscaler', 'netscaler']]                                                              ],
+                                                                 ['netscaler', 'netscaler']],
                                                     :cms_var => 'FQDN_SERVICE_TYPE_VALUES'}}
           }
 
