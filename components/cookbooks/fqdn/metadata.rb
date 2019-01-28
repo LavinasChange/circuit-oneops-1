@@ -94,15 +94,15 @@ attribute 'entries',
 
 attribute 'service_type',
           :description => "Service Type",
-          :default     => 'netscaler',
+          :default     => 'torbit',
           :format      => {
             :important => true,
             :help      => 'Select the GSLB service provider type. Not applicable for hostname.',
             :category  => '2.GSLB Config',
             :order     => 1,
             :form      => {'field'              => 'select',
-                           'options_for_select' => {:default => [['netscaler', 'netscaler'],
-                                                                 ['torbit', 'torbit']],
+                           'options_for_select' => {:default => [['torbit', 'torbit'],
+                                                                 ['netscaler', 'netscaler']]                                                              ],
                                                     :cms_var => 'FQDN_SERVICE_TYPE_VALUES'}}
           }
 
