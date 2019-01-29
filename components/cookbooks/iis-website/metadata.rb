@@ -206,6 +206,14 @@ attribute 'anonymous_authentication',
     :order     => 12
   }
 
+attribute 'static_folder_name',
+    :description => 'Static Data Folder Name',
+    :default     => '',
+    :format      => {
+      :help      => 'Name of Folder holding all static data - images, css, js. Useful for .NET Core applications. Default value is wwwroot',
+      :category  => '2.IIS Web site',
+      :order     => 13
+    }
 attribute 'iis_iusrs_group_service_accounts',
   :description => 'Service accounts (iis_iusrs)',
   :data_type   => 'array',
@@ -213,7 +221,7 @@ attribute 'iis_iusrs_group_service_accounts',
   :format      => {
     :help      => 'Add Service Accounts to the IIS_IUSRS Group',
     :category  => '2.IIS Web site',
-    :order     => 13
+    :order     => 14
   }
 
 attribute 'iisreset_before_deployment',
@@ -223,7 +231,7 @@ attribute 'iisreset_before_deployment',
     :help      => 'Specify whether to do IISReset before deploy',
     :category  => '2.IIS Web site',
     :form     => {'field' => 'checkbox'},
-    :order     => 14
+    :order     => 15
   }
 
 attribute 'iisreset_after_deployment',
@@ -233,7 +241,7 @@ attribute 'iisreset_after_deployment',
     :help      => 'Specify whether to do IISReset after deploy',
     :category  => '2.IIS Web site',
     :form     => {'field' => 'checkbox'},
-    :order     => 15
+    :order     => 16
   }
 
 attribute 'enabled',
