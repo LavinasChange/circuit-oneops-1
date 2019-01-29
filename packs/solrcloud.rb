@@ -171,7 +171,7 @@ resource "solrcloud",
     'enable_cinder' => 'true',
     'solr_custom_component_version' => '0.0.8',
     'solr_api_timeout_sec' => '300',
-    'solr_monitor_version' => '2.0.16',
+    'solr_monitor_version' => '2.0.17',
     'custom_metric_yaml' => ''
   },
 
