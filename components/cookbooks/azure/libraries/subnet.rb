@@ -57,7 +57,7 @@ module AzureNetwork
           return subnet
         end
       end
-      # OOLog.fatal('No IP addresses available in any allocated subnets.')
+      OOLog.fatal('No IP addresses available in any allocated subnets.')
     end
 
     # this method will return all subnets in the RG and vnet.
