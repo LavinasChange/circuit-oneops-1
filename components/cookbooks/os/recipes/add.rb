@@ -54,7 +54,7 @@ end
 
 #Perform common recipes (both linux and windows)
 include_recipe "os::time"
-include_recipe "os::perf_forwarder" 
+include_recipe "os::perf_forwarder"
 include_recipe "os::add-conf-files"
 
 platform_name = node.workorder.box.ciName
@@ -95,6 +95,7 @@ if ostype =~ /windows/
     end
   end
 
+  include_recipe "os::activate_windows" if provider =~ /azure/ 
   include_recipe "os::logrotate_windows"
   include_recipe "os::network_windows"
 
