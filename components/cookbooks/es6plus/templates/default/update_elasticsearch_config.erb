@@ -1,0 +1,116 @@
+require 'json'
+require 'yaml'
+
+
+# This ruby file will be setup in both master and data nodes. It will be responsible for checking if there are new master nodes, data nodes and
+# if there are changes in the minimum master nodes also. Based on the same, we will decide if elasticsearch needs to be restarted.
+# If es needs a restart, its restarted based on the a sleep counter i.e. (20 * (Index of the hostname in the list))
+
+
+# Obtains the lists of hostnames present in the fqdn by providing the platform_name (Eg. provide the platform name as es-master and it will provide all the hostnames)
+def hostnames_from_fqdn(platform_name)
+
+hostname = `hostname -f` # elasticsearch.dev.assemply.org.cloud_name.prod.cloud.xyz.com
+hostname_parts = "#{hostname}".split('.') #convert above hostname string to array using hostname_delimiter
+index = 4
+hostname_parts.delete_at(index)
+hostname_parts[0] = platform_name
+fqdn = hostname_parts.join(".")
+ips =  `host #{fqdn}`
+hostname_arr = []
+if ips.to_s.include?("not found")
+puts "Do nothing since fqdn is not created"
+
+else
+ips_arr = ips.split("\n") # list of all ips are obtained
+for ip_info in ips_arr
+ip_info_arr = ip_info.split(" ") # each line provides a bunch of info like: `solr-zk.prod-az-westus.limo-audit-prod.ms-df-solrcloud.prod.us.walmart.net has address 10.12.11.55`
+final_ip = ip_info_arr[ip_info_arr.length-1] # Taking the last part of the above line which is the `ip`
+hostname_info = `host #{final_ip}` # Using host on that same ip which gives info like: `58.11.12.10.in-addr.arpa domain name pointer solr-zk-358735198-3-488301970.prod-az-westus.limo-audit-prod.ms-df-solrcloud.prod-az-westus-1.prod.us.walmart.net.`
+hostname_info_arr = hostname_info.split(" ") # getting it space separated
+final_hostname = hostname_info_arr[hostname_info_arr.length-1].to_s  # Taking the last part which is the hostname
+hostname_arr.push(final_hostname[0..-2]) # Finally pushing it into the list
+end
+end
+
+return hostname_arr
+
+end
+
+
+# Setting a boolean for identifying if es will go through a restart
+$restart = false
+$resulting_hosts = ""
+
+# Get the current data of zen ping hosts in elasticsearch.yml file
+elasticsearch_yaml = YAML.load_file "/app/elasticsearch/ESNode/elasticsearch.yml"
+yaml_hosts = elasticsearch_yaml["discovery.zen.ping.unicast.hosts"]
+yaml_min_master_nodes = elasticsearch_yaml["discovery.zen.minimum_master_nodes"].to_i
+yaml_hosts = yaml_hosts.split(",")
+yaml_hosts.sort!.reverse
+
+# Obtaining the vm's hostname and its index in the list
+current_ip_hostname = `hostname -f`
+$index_of_current_hostname = yaml_hosts.index(current_ip_hostname)
+
+# Obtain vm's fqdn and get the hostnames in an array
+master_hostname_arr = hostnames_from_fqdn("elasticsearch-master")
+
+# Min number of master eligible nodes
+num_master_hosts = master_hostname_arr.length
+$resulting_min_master_nodes = (num_master_hosts/2) + 1
+if $resulting_min_master_nodes != yaml_min_master_nodes
+$restart = true
+end
+
+# Loop over the master_hostname_arr to identify if there is any new hostname in master's fqdn
+if master_hostname_arr.length != 0
+for hostname in master_hostname_arr
+if !yaml_hosts.include? (hostname)
+$restart = true
+end
+if $resulting_hosts == ""
+$resulting_hosts = hostname
+else
+$resulting_hosts += "," + hostname
+end
+end
+end
+
+# Obtain elasticsearch-data's fqdn get hostnames from the same
+data_hostname_arr = hostnames_from_fqdn("elasticsearch-data")
+
+# Loop over the master_hostname_arr to identify if there is any new hostname in master's fqdn
+if data_hostname_arr.length != 0
+for hostname in data_hostname_arr
+if !yaml_hosts.include? (hostname)
+$restart = true
+end
+if $resulting_hosts == ""
+$resulting_hosts = hostname
+else
+$resulting_hosts += "," + hostname
+end
+end
+end
+
+if $restart == true
+
+# Resetting the discovery zen ping unicast hosts
+elasticsearch_yaml["discovery.zen.ping.unicast.hosts"] = $resulting_hosts
+elasticsearch_yaml["discovery.zen.minimum_master_nodes"] = $resulting_min_master_nodes
+
+# Setting the file with the correct values and restarting elasticsearch
+File.open("/app/elasticsearch/ESNode/elasticsearch.yml", 'w') { |f| YAML.dump(elasticsearch_yaml, f) }
+
+#Sleep based on the index position in the sorted array
+sleep 20*$index_of_current_hostname
+
+# Restart Elasticsearch
+`sudo service elasticsearch restart`
+
+else
+
+puts "No restart needed"
+
+end
