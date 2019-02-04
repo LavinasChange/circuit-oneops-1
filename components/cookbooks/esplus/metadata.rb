@@ -1,4 +1,4 @@
-name              "es"
+name              "esplus"
 description       "Installs/Configures ElasticSearch With LB"
 version           "1.0"
 maintainer        "Strati-AF Search Team"
