@@ -1,6 +1,6 @@
 include_pack 'genericlb'
 
-name         'es6plus_data'
+name         'esplus_data'
 description  'Strati Search Elasticsearch'
 type         'Platform'
 category     'Search Engine'
