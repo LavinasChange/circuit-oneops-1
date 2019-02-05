@@ -1,3 +1,3 @@
-<%=node.cql_action%> KEYSPACE "<%= node.keyspace.keyspace_name %>" 
+CREATE KEYSPACE IF NOT EXISTS "<%= node.keyspace.keyspace_name %>" 
 <%= node.and_clause %>;
 <%= node.keyspace.extra %>

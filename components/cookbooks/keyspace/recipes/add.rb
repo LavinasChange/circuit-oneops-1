@@ -39,8 +39,8 @@ when "NetworkTopologyStrategy"
 end
 
 node.set["and_clause"] = and_clause
-node.set["cql_action"] = Keyspace::Util.keyspace_exists?(node, node.keyspace.keyspace_name.downcase) ? "ALTER" : "CREATE"
 
+# tempate will only issue CREATE KEYSPACE IF NOT EXISTS commands, never want to alter keyspaces anymore.
 template create_keyspace_file do
   source "create_keyspace.erb"
 end
