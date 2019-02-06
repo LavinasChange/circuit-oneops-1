@@ -108,7 +108,7 @@ resource "java",
 
 
 resource 'elasticsearch-data',
-         :cookbook => 'oneops.1.es6plus',
+         :cookbook => 'oneops.1.esplus',
          :design => true,
          :requires => {'constraint' => '1..*', 'services' => 'mirror'},
          :attributes => {
