@@ -1,1 +1,1 @@
-include_recipe "es6plus::add"
+include_recipe "esplus::add"
