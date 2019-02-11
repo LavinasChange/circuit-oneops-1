@@ -44,7 +44,7 @@ action :destroy do
       # Delete all storage accounts for this resource group
       begin
         storage_service = Fog::Storage::AzureRM.new(rg_manager.creds)
-        storage_accounts = storage_service.storage_accounts(resource_group: rg_name)
+        storage_accounts = storage_service.storage_accounts(:resource_group => rg_name)
         storage_accounts.each{ |acc| acc.destroy }
       rescue => e
           OOLog.fatal("Error destroying storage accounts for RG:#{rg_name}: #{e.message}")
