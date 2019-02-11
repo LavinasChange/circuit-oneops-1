@@ -206,24 +206,29 @@ module SolrCloud
       end
     end
 
-    # Construct and set the zookeeper FQDN to node level variable (zk_host_fqdns)
+    # Construct the ZooKeeper FQDN
+    def getZKfqdn(zk_platform_name)
+      hostname = `hostname -f` # solr.dev.assemply.org.cloud_name.prod.cloud.xyz.com
+      hostname_delimiter = '.'
+      hostname_parts = "#{hostname}".split('.') #convert above hostname string to array using hostname_delimiter
+      index = 4
+      # Removing <cloud_name> from hostname at index 4 as zk_fqdn won't contain the same
+      hostname_parts.delete_at(index)
+      # Replace solr hostname by zk platform name. solr.xxxx.xxx => solr-zk.xxxx.xxx
+      hostname_parts[0] = zk_platform_name
+      # Convert hostname array to '.' separated string. => solr-zk.dev.assemply.org.prod.cloud.xyz.com
+      zk_fqdn = hostname_parts.join(".")
+      return zk_fqdn
+    end
+
+    # Set the ZooKeeper FQDN or Hostnames to node level variable (zk_host_fqdns)
     def setZkhostfqdn(zkselect,ci)
       if zkselect != nil && zkselect.include?("InternalEnsemble-SameAssembly")
         if ci['platform_name'].empty?
           raise "Zookeeper platform name should be provided for the selected option - InternalEnsemble-SameAssembly"
         end
-
-        hostname = `hostname -f` # solr.dev.assemply.org.cloud_name.prod.cloud.xyz.com
-        hostname_delimiter = '.'
-        hostname_parts = "#{hostname}".split('.') #convert above hostname string to array using hostname_delimiter
-        index = 4
-        # Removing <cloud_name> from hostname at index 4 as zk_fqdn won't contain the same
-        hostname_parts.delete_at(index)
-        # Replace solr hostname by zk platform name. solr.xxxx.xxx => solr-zk.xxxx.xxx
-        hostname_parts[0] = ci['platform_name']
-        # Convert hostname array to '.' separated string. => solr-zk.dev.assemply.org.prod.cloud.xyz.com
-        zk_fqdn = hostname_parts.join(".")
-        node.set["zk_host_fqdns"] = zk_fqdn.strip;
+        
+        node.set["zk_host_fqdns"] = getZKfqdn(ci['platform_name']).strip;
         Chef::Log.info("ZK FQDN constructed is ---  #{node['zk_host_fqdns']}")
 
       end
@@ -233,6 +238,37 @@ module SolrCloud
           raise "External Zookeeper cluster fqdn connection string shoud be provided for the seleted option - ExternalEnsemble"
         end
         node.set["zk_host_fqdns"] = ci['zk_host_fqdns']
+      end
+
+      if zkselect != nil && zkselect.include?("ZKHostNames")
+        if ci['platform_name'].empty?
+          raise "Zookeeper platform name should be provided for the selected option - InternalEnsemble-SameAssembly"
+        end
+
+        zk_fqdn = getZKfqdn(ci['platform_name'])
+
+        # Putting the multiple "<zk_fqdn> has address <zookeeper_ip>" recieved in one string into
+        # seperate strings by splitting on next line character("\n")
+        zookeeper_hosts = `host #{zk_fqdn}`.split("\n")
+        zookeeper_hostnames = Array.new
+        zookeeper_hosts.each do |zookeeper_ip|
+          # Getting the <zookeeper_ip> from "<zk_fqdn> has address <zookeeper_ip>"
+          zookeeper_ip = zookeeper_ip.split(' ')[3]
+
+          # Splitting on ' ' to get the <zk_hostname_address>  Eg: "<zookeeper_ip>.in-addr.arpa domain name pointer <zk_hostname_address>."
+          # zk_hostname_address = `host #{zookeeper_ip}`.split(' ')[4].split('.')[0..-1].join('.')
+          zk_hostname_address = `host #{zookeeper_ip}`.split(' ')[4]
+          # Removing the '.' from the <zk_hostname_address>  Eg: "<zk_hostname_address>."
+          zk_hostname_address = zk_hostname_address[0..-2]
+
+          # Adding ":2181" at the end of the hostname and adding it to the list of zookeeper_hostnames
+          zookeeper_hostnames.push(zk_hostname_address + ':2181')
+        end
+        # Combining all the zookeeper hostnames into a single string like:
+        # "<ZKHostName1>:2181,<ZKHostName2>:2181,..<ZKHostName3>:2181"
+        zookeeper_hostnames = zookeeper_hostnames.join(',')
+        node.set["zk_host_fqdns"] = zookeeper_hostnames
+        Chef::Log.info("ZK Hostnames constructed are ---  #{node['zk_host_fqdns']}")
       end
 
       return node['zk_host_fqdns']

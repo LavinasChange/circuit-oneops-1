@@ -160,7 +160,7 @@ attribute 'zk_select',
       :help => 'Internal/External',
       :category => '3.Zookeeper',
       :order => 19,
-      :form => {'field' => 'select', 'options_for_select' => [['ExternalEnsemble', 'ExternalEnsemble'],['InternalEnsemble-SameAssembly', 'InternalEnsemble-SameAssembly']]}
+      :form => {'field' => 'select', 'options_for_select' => [['ExternalEnsemble', 'ExternalEnsemble'],['InternalEnsemble-SameAssembly', 'InternalEnsemble-SameAssembly'],['ZKHostNames', 'ZKHostNames']]}
   }
 
 attribute 'zk_host_fqdns',
