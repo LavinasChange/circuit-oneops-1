@@ -240,7 +240,7 @@ module SolrCloud
         node.set["zk_host_fqdns"] = ci['zk_host_fqdns']
       end
 
-      if zkselect != nil && zkselect.include?("ZKHostNames")
+      if zkselect != nil && zkselect.include?("InternalEnsemble-ZKHost")
         if ci['platform_name'].empty?
           raise "Zookeeper platform name should be provided for the selected option - InternalEnsemble-SameAssembly"
         end
@@ -259,7 +259,7 @@ module SolrCloud
           # zk_hostname_address = `host #{zookeeper_ip}`.split(' ')[4].split('.')[0..-1].join('.')
           zk_hostname_address = `host #{zookeeper_ip}`.split(' ')[4]
           # Removing the '.' from the <zk_hostname_address>  Eg: "<zk_hostname_address>."
-          zk_hostname_address = zk_hostname_address[0..-2]
+          zk_hostname_address = zk_hostname_address[0..-2].gsub(/\.$/, "")
 
           # Adding ":2181" at the end of the hostname and adding it to the list of zookeeper_hostnames
           zookeeper_hostnames.push(zk_hostname_address + ':2181')
